@@ -3,7 +3,7 @@ import requests
 
 from webapp.services.github.check_public import GITHUB_API, _github_headers
 
-class GitHubAPIError(Exception):
+class PomCheckError(Exception):
     pass
 
 def is_pom_in_root(owner: str, repo: str) -> bool:
@@ -16,4 +16,4 @@ def is_pom_in_root(owner: str, repo: str) -> bool:
     if resp.status_code == 404:
         return False
 
-    raise GitHubAPIError(f"GitHub contents error {resp.status_code}: {resp.text}")
+    raise PomCheckError(f"GitHub contents error {resp.status_code}: {resp.text}")
