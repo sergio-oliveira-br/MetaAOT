@@ -1,0 +1,40 @@
+<!-- templates/index.html -->
+<!doctype html>
+<html lang="EN">
+  <head>
+    <meta charset="utf-8">
+    <title>MetaAOT — Index</title>
+  </head>
+  <body>
+    <h1>MetaAOT</h1>
+    <form method="post">
+      {% csrf_token %}
+      {{ form.as_p }}
+      <button type="submit">Analyse</button>
+    </form>
+
+    <hr>
+
+    <h2>Logging of steps</h2>
+    {% if steps_log %}
+      <ol>
+        {% for step in steps_log %}
+          <li><pre style="display:inline; margin:0; padding:0; white-space:pre-wrap;">{{ step }}</pre></li>
+        {% endfor %}
+      </ol>
+    {% else %}
+      <p>Waiting for URL...</p>
+    {% endif %}
+
+    <hr>
+
+    <h2>Results</h2>
+    {% if result %}
+      <ul>
+        <li><strong>Status code:</strong> {{ result.status_code }}</li>
+        <li><strong>Elapse time:</strong> {{ result.response_time_seconds }}</li>
+        <li><strong>URL:</strong> {{ result.final_url }}</li>
+      </ul>
+    {% endif %}
+  </body>
+</html>
