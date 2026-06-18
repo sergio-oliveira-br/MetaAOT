@@ -1,0 +1,28 @@
+# Virtual environment
+.venv/
+venv/
+
+# PyCharm
+.idea/
+
+# Python cache
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+
+# Environment variables
+.env
+*.env
+
+# Zappa packages
+.zappa/
+package/
+*.zip
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Static files coletados
+staticfiles/
