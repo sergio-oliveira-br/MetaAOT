@@ -44,6 +44,26 @@ def index(request):
                 steps_log.append("3) Unexpected error while checking the repository.")
                 logger.exception("Unexpected error while checking repo: %s/%s", owner, repo)
 
+            # Check if is Java/Maven
+            try:
+                steps_log.append("4) Check if the project appears to be Java/Maven...")
+                is_java_maven = is_java_maven_project(owner, repo)
+                steps_log.append(f" --> Java Maven: {is_java_maven}")
+            except Exception:
+                steps_log.append("4) Unexpected error while checking the project")
+                logger.exception("Unexpected error while checking the project: %s/%s", owner, repo)
+
+            # Check if is POM is in root
+            try:
+                steps_log.append("5) Checking if the POM is in root of the repository...")
+                is_POM_root = is_pom_in_root(owner, repo)
+                steps_log.append(f" --> Is POM in Root: {is_POM_root}")
+            except Exception:
+                steps_log.append("5) Unexpected error while checking the POM file")
+                logger.exception("Unexpected error while checking the POM: %s/%s", owner, repo)
+
+
+
 
         steps_log.append(f"Finished analysis for: {url}")
 
