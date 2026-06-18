@@ -7,6 +7,8 @@ from django.views.decorators.http import require_http_methods
 from webapp.forms import UrlForm
 from webapp.services.github.extract_owner_repo import extract_owner_repo_from_url
 from webapp.services.github.check_public import is_github_repository_public
+from webapp.services.github.detect_maven import is_java_maven_project
+from webapp.services.github.pom_root_check import is_pom_in_root
 
 logger = logging.getLogger(__name__)
 
@@ -37,10 +39,6 @@ def index(request):
                 is_public = is_github_repository_public(owner, repo)
                 steps_log.append(f" --> Public Repository: {is_public}")
                 result = {'owner': owner, 'repo': repo, 'repo_public': is_public}
-
-            except CheckPublicError as e:
-                steps_log.append("3) Could not verify the repository on GitHub at the time.")
-                logger.exception("Error when checking if repo is public: %s/%s", owner, repo)
 
             except Exception:
                 steps_log.append("3) Unexpected error while checking the repository.")
