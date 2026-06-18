@@ -6,7 +6,7 @@ from webapp.services.github.check_public import _github_headers
 
 GITHUB_API = "https://api.github.com"
 
-class GitHubAPIError(Exception):
+class DetectMavenError(Exception):
     pass
 
 def is_java_maven_project(owner: str, repo: str) -> bool:
@@ -18,7 +18,7 @@ def is_java_maven_project(owner: str, repo: str) -> bool:
         return False
 
     if resp.status_code != 200:
-        raise GitHubAPIError(f"GitHub languages error {resp.status_code}: {resp.text}")
+        raise DetectMavenError(f"GitHub languages error {resp.status_code}: {resp.text}")
 
     languages = resp.json() or {}
     if "Java" in languages:
@@ -29,7 +29,7 @@ def is_java_maven_project(owner: str, repo: str) -> bool:
     r2 = requests.get(repo_url, headers=_github_headers(), timeout=10)
 
     if r2.status_code != 200:
-        raise GitHubAPIError(f"GitHub repo error {r2.status_code}: {r2.text}")
+        raise DetectMavenError(f"GitHub repo error {r2.status_code}: {r2.text}")
     default_branch = r2.json().get("default_branch", "main")
 
     tree_url = f"{GITHUB_API}/repos/{owner}/{repo}/git/trees/{default_branch}?recursive=1"
@@ -44,4 +44,4 @@ def is_java_maven_project(owner: str, repo: str) -> bool:
     elif r3.status_code == 404:
         return False
     else:
-        raise GitHubAPIError(f"GitHub tree error {r3.status_code}: {r3.text}")
+        raise DetectMavenError(f"GitHub tree error {r3.status_code}: {r3.text}")
