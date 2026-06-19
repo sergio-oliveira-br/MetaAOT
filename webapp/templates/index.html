@@ -17,11 +17,11 @@
 
     <h2>Logging of steps</h2>
     {% if steps_log %}
-      <ol>
+      <ul>
         {% for step in steps_log %}
           <li><pre style="display:inline; margin:0; padding:0; white-space:pre-wrap;">{{ step }}</pre></li>
         {% endfor %}
-      </ol>
+      </ul>
     {% else %}
       <p>Waiting for URL...</p>
     {% endif %}
