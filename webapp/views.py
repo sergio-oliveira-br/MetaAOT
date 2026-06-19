@@ -15,6 +15,7 @@ from webapp.services.github.check_public import is_github_repository_public, Git
 from webapp.services.github.detect_maven import is_java_maven_project
 from webapp.services.github.fetch_file import FetchError, fetch_file_content
 from webapp.services.github.pom_root_check import is_pom_in_root, PomCheckError
+from webapp.services.sbom.codebuild_runner import generate_sbom
 
 logger = logging.getLogger(__name__)
 
@@ -99,8 +100,9 @@ def index(request):
 
         # try load SBOM and build graph using cyclonedx
         try:
-            steps_log.append("8) Searching for SBOM CycloneDX in the repository...")
-            sbom_text = load_sbom_from_repo(owner, repo)
+            steps_log.append("8) Generating CycloneDX SBOM using AWS CodeBuild...")
+            sbom_text = generate_sbom(owner, repo)
+            steps_log.append(" --> SBOM generated successfully.")
             if sbom_text:
                 steps_log.append(" --> SBOM detected. Parsing with cyclonedx-python-lib...")
                 graph = build_graph_from_sbom(sbom_text)
@@ -109,7 +111,7 @@ def index(request):
                 steps_log.append(" --> SBOM not found. It will use heuristics only with the POM.")
                 graph = {}
         except Exception:
-            steps_log.append("8) Error loading/parsing SBOM.")
+            steps_log.append(" --> Error loading/parsing SBOM.")
             logger.exception("Error loading/parsing SBOM for %s/%s", owner, repo)
             graph = {}
 
