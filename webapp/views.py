@@ -9,7 +9,8 @@ from webapp.services.analysis.dependency_classifier import classify_direct_vs_tr
 from webapp.services.analysis.dependency_graph import build_graph_from_sbom
 from webapp.services.analysis.pom_parser import parse_pom_content, PomParseError
 from webapp.services.analysis.reporter import summarize_dependencies
-from webapp.services.analysis.sbom_loader import load_sbom_from_repo
+from webapp.services.analysis.sbom_components import extract_components
+from webapp.services.layers.aot_engine import analyze_component
 from webapp.services.github.extract_owner_repo import extract_owner_repo_from_url
 from webapp.services.github.check_public import is_github_repository_public, GitHubAPIError
 from webapp.services.github.detect_maven import is_java_maven_project
@@ -18,6 +19,8 @@ from webapp.services.github.pom_root_check import is_pom_in_root, PomCheckError
 from webapp.services.sbom.codebuild_runner import generate_sbom
 
 logger = logging.getLogger(__name__)
+
+MAX_COMPONENTS_ANALYZED = 20
 
 @require_http_methods(["GET", "POST"])
 def index(request):
@@ -48,7 +51,7 @@ def index(request):
                 return render(request, 'index.html', {'form': form, 'steps_log': steps_log, 'result': result})
 
         except GitHubAPIError:
-            steps_log.append("3) Unexpected error while checking the repository.")
+            steps_log.append("--> Unexpected error while checking the repository.")
             return render(request, 'index.html', {'form': form, 'steps_log': steps_log, 'result': result})
 
         # Check if is Java/Maven
@@ -98,32 +101,84 @@ def index(request):
             logger.exception("Error parsing POM.xml for %s/%s", owner, repo)
             return render(request, 'index.html', {'form': form, 'steps_log': steps_log, 'result': result})
 
-        # try load SBOM and build graph using cyclonedx
+        # try load SBOM
         try:
             steps_log.append("8) Generating CycloneDX SBOM using AWS CodeBuild...")
             sbom_text = generate_sbom(owner, repo)
+            if not sbom_text:
+                steps_log.append(" --> Unable to generate SBOM. Closing analysis.")
+                return render(request, 'index.html', {'form': form, 'steps_log': steps_log, 'result': result})
             steps_log.append(" --> SBOM generated successfully.")
-            if sbom_text:
-                steps_log.append(" --> SBOM detected. Parsing with cyclonedx-python-lib...")
-                graph = build_graph_from_sbom(sbom_text)
-                steps_log.append(f" --> Graph SBOM built with {len(graph)} nodes.")
-            else:
-                steps_log.append(" --> SBOM not found. It will use heuristics only with the POM.")
-                graph = {}
         except Exception:
-            steps_log.append(" --> Error loading/parsing SBOM.")
-            logger.exception("Error loading/parsing SBOM for %s/%s", owner, repo)
-            graph = {}
+            steps_log.append("8) SBOM generation failed.")
+            logger.exception(...)
+            return render(request,'index.html',{'form': form,'steps_log': steps_log,'result': result})
+
+        # try build graph using cyclonedx
+        try:
+            steps_log.append("9) Building Dependency Graph...")
+            graph = build_graph_from_sbom(sbom_text)
+            if not graph:
+                steps_log.append(" --> Unable to build SBOM. Closing analysis.")
+                return render(request, 'index.html', {'form': form, 'steps_log': steps_log, 'result': result})
+            steps_log.append(f" --> Graph SBOM built with {len(graph)} nodes.")
+        except Exception:
+            steps_log.append("9) Building Dependency Graph Failed .")
+            logger.exception("Error Building Dependency Graph for %s/%s", owner, repo)
+            return render(request,'index.html',{'form': form,'steps_log': steps_log,'result': result})
+
+
+        # try extract components
+        try:
+            steps_log.append("10) Extracting Componentes...")
+            components = extract_components(sbom_text)
+            if not components:
+                steps_log.append(" --> No Components Found.")
+                return render(request, 'index.html', {'form': form, 'steps_log': steps_log, 'result': result})
+            steps_log.append(f" --> {len(components)} Components Found.")
+        except Exception:
+            steps_log.append("10) Extracting Componentes Failed.")
+            logger.exception("Error Extracting Componentes for %s/%s", owner, repo)
+            return render(request,'index.html',{'form': form,'steps_log': steps_log,'result': result})
+
+        # try extract components
+        try:
+            steps_log.append("11) Analysing Native Image Compatibility...")
+            aot_results = []
+            for component in components[:MAX_COMPONENTS_ANALYZED]:
+                result = analyze_component(
+                    component["group"],
+                    component["name"],
+                    component["version"]
+                )
+                # result = analyze_jar_native_support(component["group"], component["name"], component["version"])
+                aot_results.append(result)
+                steps_log.append(
+                    f" --> [{result.status}] "
+                    f"Layer={result.layer} "
+                    f"{result.package_name} ")
+            green_count = sum(1 for x in aot_results if x.status == "GREEN")
+            yellow_count = sum(1 for x in aot_results if x.status == "YELLOW")
+            next_layer_count = sum(1 for x in aot_results if x.status == "NEXT_LAYER")
+            steps_log.append(f" --> AOT Analysis finished ")
+            steps_log.append(
+                f" --> GREEN={green_count} "
+                f"YELLOW={yellow_count} "
+                f"NEXT_LAYER={next_layer_count}")
+        except Exception:
+            steps_log.append("11) AOT Analysis failed.")
+            logger.exception("Error during AOT Analysis for %s/%s", owner, repo)
+            return render(request, 'index.html', {'steps_log': steps_log, 'result': result})
 
         # classify dependencies
         try:
-            steps_log.append("9) Classifying direct vs transitive dependencies...")
+            steps_log.append("12) Classifying direct vs transitive dependencies...")
             classified = classify_direct_vs_transitive(pom_deps, graph)
             summary = summarize_dependencies(classified)
             steps_log.append(" --> Classification completed.")
             result = {"summary": summary}
         except ClassificationError:
-            steps_log.append("9) Error classifying dependencies.")
+            steps_log.append("12) Error classifying dependencies.")
             logger.exception("Error classifying dependencies for %s/%s", owner, repo)
             result = None
 
