@@ -33,7 +33,7 @@ def index(request):
         steps_log.append(f"1) Initiating analysis for: {url}")
         owner_repo = extract_owner_repo_from_url(url)
         if not owner_repo:
-            steps_log.append("2) URL is not a valid GitHub repository. Terminating...")
+            steps_log.append(" [!] URL is not a valid GitHub repository. Terminating...")
             return render(request, 'index.html', {'form': form, 'steps_log': steps_log, 'result': result})
         owner, repo = owner_repo
         steps_log.append(f"2) Repository detected: {owner}/{repo}")
@@ -43,11 +43,11 @@ def index(request):
             steps_log.append("3) Checking if the repository is public...")
             is_public = is_github_repository_public(owner, repo)
             if not is_public:
-                steps_log.append(" --> Repository is not public. Terminating analysis.")
+                steps_log.append(" [!] Repository is not public. Terminating analysis.")
                 return render(request, 'index.html', {'form': form, 'steps_log': steps_log, 'result': result})
             steps_log.append(f" --> Public Repository Confirmed.")
         except GitHubAPIError:
-            steps_log.append("--> Unexpected error while checking the repository.")
+            steps_log.append(" [x] Unexpected error while checking the repository.")
             return render(request, 'index.html', {'form': form, 'steps_log': steps_log, 'result': result})
 
         # Check if is Java/Maven
@@ -55,11 +55,11 @@ def index(request):
             steps_log.append("4) Check if the project appears to be Java/Maven...")
             is_java_maven = is_java_maven_project(owner, repo)
             if not is_java_maven:
-                steps_log.append(" --> Project is not Java Maven. Terminating analysis.")
+                steps_log.append(" [!] Project is not Java Maven. Terminating analysis.")
                 return render(request, 'index.html', {'form': form, 'steps_log': steps_log, 'result': result})
             steps_log.append(f" --> Java/Maven Confirmed.")
         except Exception:
-            steps_log.append(" --> Unexpected error while checking the project")
+            steps_log.append(" [x] Unexpected error while checking the project")
             logger.exception("Unexpected error while checking the project: %s/%s", owner, repo)
 
         # Check if is POM is in root
@@ -67,11 +67,11 @@ def index(request):
             steps_log.append("5) Checking if the POM.xml is in root of the repository...")
             pom_exists = is_pom_in_root(owner, repo)
             if not pom_exists:
-                steps_log.append(" --> POM.xml not found in the root. Terminating analysis.")
+                steps_log.append(" [!] POM.xml not found in the root. Terminating analysis.")
                 return render(request, 'index.html', {'form': form, 'steps_log': steps_log, 'result': result})
             steps_log.append(f" --> POM.xml found in root of the repository.")
         except PomCheckError:
-            steps_log.append("5) Error checking POM.xml in the repository.")
+            steps_log.append(" [x] Error checking POM.xml in the repository.")
             return render(request, 'index.html', {'form': form, 'steps_log': steps_log, 'result': result})
 
         # fetch pom content
@@ -79,11 +79,11 @@ def index(request):
             steps_log.append("6) Downloading pom.xml...")
             pom_text = fetch_file_content(owner, repo, "pom.xml")
             if not pom_text:
-                steps_log.append(" --> Unable to download POM.xml. Closing analysis.")
+                steps_log.append(" [!] Unable to download POM.xml. Closing analysis.")
                 return render(request, 'index.html', {'form': form, 'steps_log': steps_log, 'result': result})
             steps_log.append(" --> POM.xml downloaded successfully.")
         except FetchError:
-            steps_log.append("6) Error downloading POM.xml.")
+            steps_log.append(" [x] Error downloading POM.xml.")
             logger.exception("Error fetching POM.xml for %s/%s", owner, repo)
             return render(request, 'index.html', {'form': form, 'steps_log': steps_log, 'result': result})
 
@@ -92,10 +92,10 @@ def index(request):
             steps_log.append("7) Parsing POM.xml...")
             pom_deps = parse_pom_content(pom_text)
             if not pom_deps:
-                steps_log.append(" --> Unable to parser POM. It does not exist. Terminating analysis.")
+                steps_log.append(" [!] Unable to parser POM. It does not exist. Terminating analysis.")
             steps_log.append(f" --> {len(pom_deps)} dependencies declared found on POM.")
         except PomParseError:
-            steps_log.append("7) Error parsing POM.xml.")
+            steps_log.append(" [x] Error parsing POM.xml.")
             logger.exception("Error parsing POM.xml for %s/%s", owner, repo)
             return render(request, 'index.html', {'form': form, 'steps_log': steps_log, 'result': result})
 
@@ -104,11 +104,11 @@ def index(request):
             steps_log.append("8) Generating CycloneDX SBOM using AWS CodeBuild...")
             sbom_text = generate_sbom(owner, repo)
             if not sbom_text:
-                steps_log.append(" --> Unable to generate SBOM. Closing analysis.")
+                steps_log.append(" [!] Unable to generate SBOM. Closing analysis.")
                 return render(request, 'index.html', {'form': form, 'steps_log': steps_log, 'result': result})
             steps_log.append(" --> SBOM Generated Successfully.")
         except Exception:
-            steps_log.append("8) SBOM generation failed.")
+            steps_log.append(" [x] SBOM generation failed.")
             logger.exception(...)
             return render(request,'index.html',{'form': form,'steps_log': steps_log,'result': result})
 
@@ -117,11 +117,11 @@ def index(request):
             steps_log.append("9) Building Dependency Graph...")
             graph = build_graph_from_sbom(sbom_text)
             if not graph:
-                steps_log.append(" --> Unable to build SBOM. Closing analysis.")
+                steps_log.append(" [!] Unable to build SBOM. Closing analysis.")
                 return render(request, 'index.html', {'form': form, 'steps_log': steps_log, 'result': result})
             steps_log.append(f" --> Graph SBOM built with {len(graph)} nodes.")
         except Exception:
-            steps_log.append("9) Building Dependency Graph Failed.")
+            steps_log.append(" [x] Building Dependency Graph Failed.")
             logger.exception("Error Building Dependency Graph for %s/%s", owner, repo)
             return render(request,'index.html',{'form': form,'steps_log': steps_log,'result': result})
 
@@ -131,11 +131,11 @@ def index(request):
             steps_log.append("10) Extracting Componentes...")
             components = extract_components(sbom_text)
             if not components:
-                steps_log.append(" --> No Components Found.")
+                steps_log.append(" [!] No Components Found.")
                 return render(request, 'index.html', {'form': form, 'steps_log': steps_log, 'result': result})
             steps_log.append(f" --> {len(components)} Components Found.")
         except Exception:
-            steps_log.append("10) Extracting Componentes Failed.")
+            steps_log.append(" [x] Extracting Componentes Failed.")
             logger.exception("Error Extracting Componentes for %s/%s", owner, repo)
             return render(request,'index.html',{'form': form,'steps_log': steps_log,'result': result})
 
@@ -163,7 +163,7 @@ def index(request):
                 f"YELLOW={yellow_count} "
                 f"NEXT_LAYER={next_layer_count}")
         except Exception:
-            steps_log.append("11) AOT Analysis failed.")
+            steps_log.append(" [x] AOT Analysis Failed.")
             logger.exception("Error during AOT Analysis for %s/%s", owner, repo)
             return render(request, 'index.html', {'steps_log': steps_log, 'result': result})
 
