@@ -1,7 +1,9 @@
 # webapp/views.py
 
 import logging
+import time
 
+from django.http import HttpResponse
 from django.shortcuts import render
 from django.views.decorators.http import require_http_methods
 from webapp.forms import UrlForm
@@ -23,7 +25,18 @@ logger = logging.getLogger(__name__)
 MAX_COMPONENTS_ANALYZED = 20
 
 @require_http_methods(["GET", "POST"])
+def health(request):
+    return HttpResponse("OK")
+
+@require_http_methods(["GET", "POST"])
+def sleep60(request):
+    import time
+    time.sleep(60)
+    return HttpResponse("OK AFTER 60")
+
+@require_http_methods(["GET", "POST"])
 def index(request):
+    start = time.time()
     steps_log = []
     result = None
     form = UrlForm(request.POST or None)
@@ -45,9 +58,9 @@ def index(request):
             if not is_public:
                 steps_log.append(" [!] Repository is not public. Terminating analysis.")
                 return render(request, 'index.html', {'form': form, 'steps_log': steps_log, 'result': result})
-            steps_log.append(f" --> Public Repository Confirmed.")
+            steps_log.append(f" [OK] Public Repository Confirmed.")
         except GitHubAPIError:
-            steps_log.append(" [x] Unexpected error while checking the repository.")
+            steps_log.append(" [X] Unexpected error while checking the repository.")
             return render(request, 'index.html', {'form': form, 'steps_log': steps_log, 'result': result})
 
         # Check if is Java/Maven
@@ -57,9 +70,9 @@ def index(request):
             if not is_java_maven:
                 steps_log.append(" [!] Project is not Java Maven. Terminating analysis.")
                 return render(request, 'index.html', {'form': form, 'steps_log': steps_log, 'result': result})
-            steps_log.append(f" --> Java/Maven Confirmed.")
+            steps_log.append(f" [OK] Java/Maven Confirmed.")
         except Exception:
-            steps_log.append(" [x] Unexpected error while checking the project")
+            steps_log.append(" [X] Unexpected error while checking the project")
             logger.exception("Unexpected error while checking the project: %s/%s", owner, repo)
 
         # Check if is POM is in root
@@ -69,9 +82,9 @@ def index(request):
             if not pom_exists:
                 steps_log.append(" [!] POM.xml not found in the root. Terminating analysis.")
                 return render(request, 'index.html', {'form': form, 'steps_log': steps_log, 'result': result})
-            steps_log.append(f" --> POM.xml found in root of the repository.")
+            steps_log.append(f" [OK] POM.xml found in root of the repository.")
         except PomCheckError:
-            steps_log.append(" [x] Error checking POM.xml in the repository.")
+            steps_log.append(" [X] Error checking POM.xml in the repository.")
             return render(request, 'index.html', {'form': form, 'steps_log': steps_log, 'result': result})
 
         # fetch pom content
@@ -81,9 +94,9 @@ def index(request):
             if not pom_text:
                 steps_log.append(" [!] Unable to download POM.xml. Closing analysis.")
                 return render(request, 'index.html', {'form': form, 'steps_log': steps_log, 'result': result})
-            steps_log.append(" --> POM.xml downloaded successfully.")
+            steps_log.append(" [OK] POM.xml downloaded successfully.")
         except FetchError:
-            steps_log.append(" [x] Error downloading POM.xml.")
+            steps_log.append(" [X] Error downloading POM.xml.")
             logger.exception("Error fetching POM.xml for %s/%s", owner, repo)
             return render(request, 'index.html', {'form': form, 'steps_log': steps_log, 'result': result})
 
@@ -93,9 +106,9 @@ def index(request):
             pom_deps = parse_pom_content(pom_text)
             if not pom_deps:
                 steps_log.append(" [!] Unable to parser POM. It does not exist. Terminating analysis.")
-            steps_log.append(f" --> {len(pom_deps)} dependencies declared found on POM.")
+            steps_log.append(f" [OK] {len(pom_deps)} dependencies declared found on POM.")
         except PomParseError:
-            steps_log.append(" [x] Error parsing POM.xml.")
+            steps_log.append(" [X] Error parsing POM.xml.")
             logger.exception("Error parsing POM.xml for %s/%s", owner, repo)
             return render(request, 'index.html', {'form': form, 'steps_log': steps_log, 'result': result})
 
@@ -106,9 +119,9 @@ def index(request):
             if not sbom_text:
                 steps_log.append(" [!] Unable to generate SBOM. Closing analysis.")
                 return render(request, 'index.html', {'form': form, 'steps_log': steps_log, 'result': result})
-            steps_log.append(" --> SBOM Generated Successfully.")
+            steps_log.append(" [OK] SBOM Generated Successfully.")
         except Exception:
-            steps_log.append(" [x] SBOM generation failed.")
+            steps_log.append(" [X] SBOM generation failed.")
             logger.exception(...)
             return render(request,'index.html',{'form': form,'steps_log': steps_log,'result': result})
 
@@ -119,9 +132,9 @@ def index(request):
             if not graph:
                 steps_log.append(" [!] Unable to build SBOM. Closing analysis.")
                 return render(request, 'index.html', {'form': form, 'steps_log': steps_log, 'result': result})
-            steps_log.append(f" --> Graph SBOM built with {len(graph)} nodes.")
+            steps_log.append(f" [OK] Graph SBOM built with {len(graph)} nodes.")
         except Exception:
-            steps_log.append(" [x] Building Dependency Graph Failed.")
+            steps_log.append(" [X] Building Dependency Graph Failed.")
             logger.exception("Error Building Dependency Graph for %s/%s", owner, repo)
             return render(request,'index.html',{'form': form,'steps_log': steps_log,'result': result})
 
@@ -129,19 +142,22 @@ def index(request):
         # try extract components
         try:
             steps_log.append("10) Extracting Componentes...")
+            logger.info("ENTER STEP 10")
             components = extract_components(sbom_text)
             if not components:
                 steps_log.append(" [!] No Components Found.")
                 return render(request, 'index.html', {'form': form, 'steps_log': steps_log, 'result': result})
-            steps_log.append(f" --> {len(components)} Components Found.")
+            steps_log.append(f" [OK] {len(components)} Components Found.")
+            logger.info("EXIT STEP 10")
         except Exception:
-            steps_log.append(" [x] Extracting Componentes Failed.")
+            steps_log.append(" [X] Extracting Componentes Failed.")
             logger.exception("Error Extracting Componentes for %s/%s", owner, repo)
             return render(request,'index.html',{'form': form,'steps_log': steps_log,'result': result})
 
         # try extract components
         try:
             steps_log.append("11) Analysing Native Image Compatibility...")
+            logger.info("ENTER STEP 11")
             aot_results = []
             for component in components[:MAX_COMPONENTS_ANALYZED]:
                 result = analyze_component(
@@ -151,7 +167,7 @@ def index(request):
                 )
                 aot_results.append(result)
                 steps_log.append(
-                    f" --> [{result.status}] "
+                    f" [OK] [{result.status}] "
                     f"Layer={result.layer} "
                     f"{result.package_name} ")
             green_count = sum(1 for x in aot_results if x.status == "GREEN")
@@ -162,24 +178,28 @@ def index(request):
                 f" --> GREEN={green_count} "
                 f"YELLOW={yellow_count} "
                 f"NEXT_LAYER={next_layer_count}")
+            logger.info("EXIT STEP 11")
         except Exception:
-            steps_log.append(" [x] AOT Analysis Failed.")
+            steps_log.append(" [X] AOT Analysis Failed.")
             logger.exception("Error during AOT Analysis for %s/%s", owner, repo)
             return render(request, 'index.html', {'steps_log': steps_log, 'result': result})
 
         # classify dependencies
         try:
             steps_log.append("12) Classifying direct vs transitive dependencies...")
+            logger.info("ENTER STEP 12")
             classified = classify_direct_vs_transitive(pom_deps, graph)
             summary = summarize_dependencies(classified)
-            steps_log.append(" --> Classification completed.")
+            steps_log.append(" [OK] Classification completed.")
             result = {"summary": summary}
+            logger.info("EXIT STEP 12")
         except ClassificationError:
-            steps_log.append("12) Error classifying dependencies.")
+            steps_log.append(" [X] Error classifying dependencies.")
             logger.exception("Error classifying dependencies for %s/%s", owner, repo)
             result = None
 
-        steps_log.append(f"Finished analysis for: {url}")
+        elapsedTime = time.time() - start
+        steps_log.append(f"Finished analysis for: {url}. Elapsed time:  %.2f sec, {elapsedTime}")
 
     return render(request, 'index.html', {
         'form': form,
