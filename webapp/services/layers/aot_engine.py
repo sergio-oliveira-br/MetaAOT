@@ -33,8 +33,8 @@ def analyze_component(group_id, artifact_id, version):
 
     return AOTAnalysisResult(
         package_name=package_name,
-        status="NEXT_LAYER",
+        status="NO EVIDENCE",
         confidence="LOW",
-        reason="No metadata found",
+        reason="No internal metadata found and no external reachability metadata available",
         elapsed_ms=(time.perf_counter()-start) * 1000,
         layer=3)
