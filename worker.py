@@ -4,13 +4,13 @@ import json
 import logging
 import boto3
 
-from webapp.services.github.fetch_file import fetch_file_content
-from webapp.services.analysis.pom_parser import parse_pom_content
+from webapp.services.github.fetch_file import fetch_file_content, FetchError
+from webapp.services.analysis.pom_parser import parse_pom_content, PomParseError
 from webapp.services.sbom.codebuild_runner import generate_sbom
 from webapp.services.analysis.dependency_graph import build_graph_from_sbom
 from webapp.services.analysis.sbom_components import extract_components
 from webapp.services.layers.aot_engine import analyze_component
-from webapp.services.analysis.dependency_classifier import classify_direct_vs_transitive
+from webapp.services.analysis.dependency_classifier import classify_direct_vs_transitive, ClassificationError
 from webapp.services.analysis.reporter import summarize_dependencies
 
 logger = logging.getLogger()
@@ -18,10 +18,33 @@ logger.setLevel(logging.INFO)
 
 dynamodb = boto3.resource("dynamodb")
 table = dynamodb.Table("AnalysisJob")
-MAX_COMPONENTS_ANALYZED = 20
+MAX_COMPONENTS_ANALYZED = 100
+
+def append_log(job_id, message):
+    logger.info(f"[{job_id}] {message}")
+    try:
+        table.update_item(
+            Key={"job_id": job_id},
+            UpdateExpression="SET steps_log = list_append(if_not_exists(steps_log, :empty_list), :log_msg)",
+            ExpressionAttributeValues={
+                ":log_msg": [message],
+                ":empty_list": []
+            }
+        )
+    except Exception as e:
+        logger.error(f"Error updating steps_log in DynamoDB: {e}")
+
+def handle_failure(job_id, exc, final_message):
+    append_log(job_id, final_message)
+    table.update_item(
+        Key={"job_id": job_id},
+        UpdateExpression="SET #s=:s, #e=:e",
+        ExpressionAttributeNames={"#s": "status", "#e": "error"},
+        ExpressionAttributeValues={":s": "FAILED", ":e": str(exc)}
+    )
 
 def lambda_handler(event, context):
-    logger.info("Worker started")
+    logger.info("Worker Started")
     logger.info("Received event: " + json.dumps(event, indent=2))
 
     if "body" in event:
@@ -37,7 +60,6 @@ def lambda_handler(event, context):
         owner = event.get("owner")
         repo = event.get("repo")
 
-    # Checker
     if not job_id or not owner or not repo:
         logger.error("Missing required parameters: job_id, owner, or repo.")
         return {
@@ -46,65 +68,103 @@ def lambda_handler(event, context):
         }
 
     try:
-        logger.info("Processing %s/%s",owner,repo)
+        append_log(job_id, "6) Downloading pom.xml...")
+        try:
+            pom_text = fetch_file_content(owner, repo, "pom.xml")
+            if not pom_text:
+                handle_failure(job_id, "Empty POM", " [!] Unable to download POM.xml. Closing analysis.")
+                return {"statusCode": 200}
+            append_log(job_id, " [OK] POM.xml downloaded successfully.")
+        except FetchError as exc:
+            handle_failure(job_id, exc, " [X] Error downloading POM.xml.")
+            return {"statusCode": 200}
 
-        pom_text = fetch_file_content(owner, repo, "pom.xml")
-        pom_deps = parse_pom_content(pom_text)
-        sbom_text = generate_sbom(owner, repo)
-        graph = build_graph_from_sbom(sbom_text)
-        components = extract_components(sbom_text)
-        aot_results = []
+        append_log(job_id, "7) Parsing POM.xml...")
+        try:
+            pom_deps = parse_pom_content(pom_text)
+            if not pom_deps:
+                append_log(job_id, " [!] Unable to parse POM. It does not exist. Terminating analysis.")
+            append_log(job_id, f" [OK] {len(pom_deps)} dependencies declared found on POM.")
+        except PomParseError as exc:
+            handle_failure(job_id, exc, " [X] Error parsing POM.xml.")
+            return {"statusCode": 200}
 
-        for component in components[:MAX_COMPONENTS_ANALYZED]:
-            result = analyze_component(component["group"], component["name"], component["version"])
-            aot_results.append({"status": result.status, "layer": result.layer, "package_name": result.package_name})
+        append_log(job_id, "8) Generating CycloneDX SBOM using AWS CodeBuild...")
+        try:
+            sbom_text = generate_sbom(owner, repo)
+            if not sbom_text:
+                handle_failure(job_id, "Empty SBOM", " [!] Unable to generate SBOM. Closing analysis.")
+                return {"statusCode": 200}
+            append_log(job_id, " [OK] SBOM Generated Successfully.")
+        except Exception as exc:
+            handle_failure(job_id, exc, " [X] SBOM generation failed.")
+            return {"statusCode": 200}
 
-        classified = classify_direct_vs_transitive(pom_deps, graph)
-        summary = summarize_dependencies(classified)
+        append_log(job_id, "9) Building Dependency Graph...")
+        try:
+            graph = build_graph_from_sbom(sbom_text)
+            if not graph:
+                handle_failure(job_id, "Empty Graph", " [!] Unable to build SBOM Graph. Closing analysis.")
+                return {"statusCode": 200}
+            append_log(job_id, f" [OK] Graph SBOM built with {len(graph)} nodes.")
+        except Exception as exc:
+            handle_failure(job_id, exc, " [X] Building Dependency Graph Failed.")
+            return {"statusCode": 200}
+
+        append_log(job_id, "10) Extracting Components...")
+        try:
+            components = extract_components(sbom_text)
+            if not components:
+                handle_failure(job_id, "No Components", " [!] No Components Found.")
+                return {"statusCode": 200}
+            append_log(job_id, f" [OK] {len(components)} Components Found.")
+        except Exception as exc:
+            handle_failure(job_id, exc, " [X] Extracting Components Failed.")
+            return {"statusCode": 200}
+
+        append_log(job_id, "11) Analysing Native Image Compatibility...")
+        try:
+            aot_results = []
+            for component in components[:MAX_COMPONENTS_ANALYZED]:
+                res = analyze_component(component["group"], component["name"], component["version"])
+                aot_results.append({
+                    "status": res.status,
+                    "layer": res.layer,
+                    "package_name": res.package_name
+                })
+            green_count = sum(1 for x in aot_results if x["status"] == "GREEN")
+            yellow_count = sum(1 for x in aot_results if x["status"] == "YELLOW")
+            next_layer_count = sum(1 for x in aot_results if x["status"] == "NEXT_LAYER")
+
+            append_log(job_id, " --> AOT Analysis finished")
+            append_log(job_id, f" --> GREEN={green_count} YELLOW={yellow_count} NEXT_LAYER={next_layer_count}")
+        except Exception as exc:
+            handle_failure(job_id, exc, " [X] AOT Analysis Failed.")
+            return {"statusCode": 200}
+
+        append_log(job_id, "12) Classifying direct vs transitive dependencies...")
+        try:
+            classified = classify_direct_vs_transitive(pom_deps, graph)
+            summary = summarize_dependencies(classified)
+            append_log(job_id, " [OK] Classification completed.")
+        except ClassificationError as exc:
+            handle_failure(job_id, exc, " [X] Error classifying dependencies.")
+            return {"statusCode": 200}
 
         result = {"summary": summary, "aot_results": aot_results}
-
-        logger.info("Processing %s/%s",owner,repo)
-        logger.info("Summary: %s", summary)
-        logger.info("AOT Results: %s", aot_results)
-        logger.info("jobID: %s", job_id)
+        append_log(job_id, f"Finished analysis for job {job_id}.")
 
         table.update_item(
-            Key={
-                "job_id": job_id
-            },
-            UpdateExpression=
-                "SET #s=:s,#r=:r",
-            ExpressionAttributeNames={
-                "#s": "status",
-                "#r": "result"
-            },
-            ExpressionAttributeValues={
-                ":s": "COMPLETED",
-                ":r": result
-            }
+            Key={"job_id": job_id},
+            UpdateExpression="SET #s=:s, #r=:r",
+            ExpressionAttributeNames={"#s": "status", "#r": "result"},
+            ExpressionAttributeValues={":s": "COMPLETED", ":r": result}
         )
-        logger.info("Job %s completed",job_id)
         return {
             "statusCode": 200,
             "body": json.dumps({"message": f"Job {job_id} processed successfully"})
         }
 
     except Exception as exc:
-        logger.exception("Job %s failed",job_id)
-        table.update_item(
-            Key={
-                "job_id": job_id
-            },
-            UpdateExpression=
-                "SET #s=:s,#e=:e",
-            ExpressionAttributeNames={
-                "#s": "status",
-                "#e": "error"
-            },
-            ExpressionAttributeValues={
-                ":s": "FAILED",
-                ":e": str(exc)
-            }
-        )
-        raise
+        handle_failure(job_id, exc, " [X] Unexpected Worker failure.")
+        raise exc
