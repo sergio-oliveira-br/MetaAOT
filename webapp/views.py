@@ -1,9 +1,12 @@
 # webapp/views.py
-
+import json
 import logging
 import time
+import uuid
 
-from django.http import HttpResponse
+import boto3
+from boto3.dynamodb import table
+from django.http import HttpResponse, JsonResponse
 from django.shortcuts import render
 from django.views.decorators.http import require_http_methods
 from webapp.forms import UrlForm
@@ -21,8 +24,8 @@ from webapp.services.github.pom_root_check import is_pom_in_root, PomCheckError
 from webapp.services.sbom.codebuild_runner import generate_sbom
 
 logger = logging.getLogger(__name__)
-
-MAX_COMPONENTS_ANALYZED = 20
+lambda_client = boto3.client("lambda")
+table_db = boto3.resource("dynamodb").Table( "AnalysisJob")
 
 @require_http_methods(["GET", "POST"])
 def health(request):
@@ -33,6 +36,17 @@ def sleep60(request):
     import time
     time.sleep(60)
     return HttpResponse("OK AFTER 60")
+
+def job_status(request, job_id):
+    response = table_db.get_item(
+        Key={
+            "job_id": job_id
+        }
+    )
+    item = response.get("Item")
+    if not item:
+        return JsonResponse({"status": "NOT_FOUND"})
+    return JsonResponse(item)
 
 @require_http_methods(["GET", "POST"])
 def index(request):
@@ -74,6 +88,7 @@ def index(request):
         except Exception:
             steps_log.append(" [X] Unexpected error while checking the project")
             logger.exception("Unexpected error while checking the project: %s/%s", owner, repo)
+            return render(request, 'index.html', {'form': form, 'steps_log': steps_log, 'result': result})
 
         # Check if is POM is in root
         try:
@@ -87,122 +102,34 @@ def index(request):
             steps_log.append(" [X] Error checking POM.xml in the repository.")
             return render(request, 'index.html', {'form': form, 'steps_log': steps_log, 'result': result})
 
-        # fetch pom content
-        try:
-            steps_log.append("6) Downloading pom.xml...")
-            pom_text = fetch_file_content(owner, repo, "pom.xml")
-            if not pom_text:
-                steps_log.append(" [!] Unable to download POM.xml. Closing analysis.")
-                return render(request, 'index.html', {'form': form, 'steps_log': steps_log, 'result': result})
-            steps_log.append(" [OK] POM.xml downloaded successfully.")
-        except FetchError:
-            steps_log.append(" [X] Error downloading POM.xml.")
-            logger.exception("Error fetching POM.xml for %s/%s", owner, repo)
-            return render(request, 'index.html', {'form': form, 'steps_log': steps_log, 'result': result})
-
-        # parse pom
-        try:
-            steps_log.append("7) Parsing POM.xml...")
-            pom_deps = parse_pom_content(pom_text)
-            if not pom_deps:
-                steps_log.append(" [!] Unable to parser POM. It does not exist. Terminating analysis.")
-            steps_log.append(f" [OK] {len(pom_deps)} dependencies declared found on POM.")
-        except PomParseError:
-            steps_log.append(" [X] Error parsing POM.xml.")
-            logger.exception("Error parsing POM.xml for %s/%s", owner, repo)
-            return render(request, 'index.html', {'form': form, 'steps_log': steps_log, 'result': result})
-
-        # try load SBOM
-        try:
-            steps_log.append("8) Generating CycloneDX SBOM using AWS CodeBuild...")
-            sbom_text = generate_sbom(owner, repo)
-            if not sbom_text:
-                steps_log.append(" [!] Unable to generate SBOM. Closing analysis.")
-                return render(request, 'index.html', {'form': form, 'steps_log': steps_log, 'result': result})
-            steps_log.append(" [OK] SBOM Generated Successfully.")
-        except Exception:
-            steps_log.append(" [X] SBOM generation failed.")
-            logger.exception(...)
-            return render(request,'index.html',{'form': form,'steps_log': steps_log,'result': result})
-
-        # try build graph using cyclonedx
-        try:
-            steps_log.append("9) Building Dependency Graph...")
-            graph = build_graph_from_sbom(sbom_text)
-            if not graph:
-                steps_log.append(" [!] Unable to build SBOM. Closing analysis.")
-                return render(request, 'index.html', {'form': form, 'steps_log': steps_log, 'result': result})
-            steps_log.append(f" [OK] Graph SBOM built with {len(graph)} nodes.")
-        except Exception:
-            steps_log.append(" [X] Building Dependency Graph Failed.")
-            logger.exception("Error Building Dependency Graph for %s/%s", owner, repo)
-            return render(request,'index.html',{'form': form,'steps_log': steps_log,'result': result})
-
-
-        # try extract components
-        try:
-            steps_log.append("10) Extracting Componentes...")
-            logger.info("ENTER STEP 10")
-            components = extract_components(sbom_text)
-            if not components:
-                steps_log.append(" [!] No Components Found.")
-                return render(request, 'index.html', {'form': form, 'steps_log': steps_log, 'result': result})
-            steps_log.append(f" [OK] {len(components)} Components Found.")
-            logger.info("EXIT STEP 10")
-        except Exception:
-            steps_log.append(" [X] Extracting Componentes Failed.")
-            logger.exception("Error Extracting Componentes for %s/%s", owner, repo)
-            return render(request,'index.html',{'form': form,'steps_log': steps_log,'result': result})
-
-        # try extract components
-        try:
-            steps_log.append("11) Analysing Native Image Compatibility...")
-            logger.info("ENTER STEP 11")
-            aot_results = []
-            for component in components[:MAX_COMPONENTS_ANALYZED]:
-                result = analyze_component(
-                    component["group"],
-                    component["name"],
-                    component["version"]
-                )
-                aot_results.append(result)
-                steps_log.append(
-                    f" [OK] [{result.status}] "
-                    f"Layer={result.layer} "
-                    f"{result.package_name} ")
-            green_count = sum(1 for x in aot_results if x.status == "GREEN")
-            yellow_count = sum(1 for x in aot_results if x.status == "YELLOW")
-            next_layer_count = sum(1 for x in aot_results if x.status == "NEXT_LAYER")
-            steps_log.append(f" --> AOT Analysis finished ")
-            steps_log.append(
-                f" --> GREEN={green_count} "
-                f"YELLOW={yellow_count} "
-                f"NEXT_LAYER={next_layer_count}")
-            logger.info("EXIT STEP 11")
-        except Exception:
-            steps_log.append(" [X] AOT Analysis Failed.")
-            logger.exception("Error during AOT Analysis for %s/%s", owner, repo)
-            return render(request, 'index.html', {'steps_log': steps_log, 'result': result})
-
-        # classify dependencies
-        try:
-            steps_log.append("12) Classifying direct vs transitive dependencies...")
-            logger.info("ENTER STEP 12")
-            classified = classify_direct_vs_transitive(pom_deps, graph)
-            summary = summarize_dependencies(classified)
-            steps_log.append(" [OK] Classification completed.")
-            result = {"summary": summary}
-            logger.info("EXIT STEP 12")
-        except ClassificationError:
-            steps_log.append(" [X] Error classifying dependencies.")
-            logger.exception("Error classifying dependencies for %s/%s", owner, repo)
-            result = None
+        steps_log.append(f"Calling the Worker...")
+        job_id = str(uuid.uuid4())
+        table_db.put_item(
+            Item={
+                "job_id": job_id,
+                "status": "PROCESSING",
+                "owner": owner,
+                "repo": repo,
+                "steps_log": steps_log
+            }
+        )
+        lambda_client.invoke(
+            FunctionName="metaaot-worker-worker",
+            InvocationType="Event",
+            Payload=json.dumps({
+                "job_id": job_id,
+                "owner": owner,
+                "repo": repo
+            })
+        )
 
         elapsedTime = time.time() - start
-        steps_log.append(f"Finished analysis for: {url}. Elapsed time:  %.2f sec, {elapsedTime}")
+        steps_log.append(f"Delegated to worker. Local elapsed time: %.2f sec" % elapsedTime)
 
-    return render(request, 'index.html', {
-        'form': form,
-        'steps_log': steps_log,
-        'result': result,
-    })
+        return render(request, "index.html", {
+            "form": form,
+            "steps_log": steps_log,
+            "result": result,
+            "job_id": job_id
+        })
+    return render(request, "index.html", {"form": form, "steps_log": steps_log, "result": result})
