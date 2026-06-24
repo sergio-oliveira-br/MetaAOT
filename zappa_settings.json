@@ -1,19 +1,71 @@
 {
-    "production": {
-        "aws_region": "eu-west-1",
-        "django_settings": "MetaAOT.settings",
-        "exclude": [
-            "boto3",
-            "dateutil",
-            "botocore",
-            "s3transfer"
+  "production": {
+    "aws_region": "eu-west-1",
+    "django_settings": "MetaAOT.settings",
+    "profile_name": "default",
+    "project_name": "metaaot",
+    "runtime": "python3.12",
+    "s3_bucket": "zappa-kp2b4y5n5",
+    "timeout_seconds": 200,
+    "memory_size": 1024,
+    "keep_warm": false,
+    "manage_roles": true,
+    "iam_policy": [
+      {
+        "Effect": "Allow",
+        "Action": [
+          "logs:*"
         ],
-        "profile_name": "default",
-        "project_name": "metaaot",
-        "runtime": "python3.12",
-        "s3_bucket": "zappa-kp2b4y5n5",
-        "timeout_seconds": 30,
-        "memory_size": 512,
-        "keep_warm": false
-    }
+        "Resource": "arn:aws:logs:*:*:*"
+      },
+      {
+        "Effect": "Allow",
+        "Action": [
+          "codebuild:StartBuild",
+          "codebuild:BatchGetBuilds",
+          "codebuild:StopBuild",
+          "codebuild:ListBuildsForProject",
+          "codebuild:BatchGetProjects"
+        ],
+        "Resource": "arn:aws:codebuild:eu-west-1:542672133770:project/sbom-generator"
+      },
+      {
+        "Effect": "Allow",
+        "Action": [
+          "iam:PassRole"
+        ],
+        "Resource": "arn:aws:iam::542672133770:role/service-role/codebuild-sbom-generator-service-role"
+      }
+    ]
+  },
+  "worker": {
+    "aws_region": "eu-west-1",
+    "project_name": "metaaot-worker",
+    "runtime": "python3.12",
+    "s3_bucket": "zappa-kp2b4y5n5",
+    "lambda_handler": "worker.lambda_handler",
+    "manage_roles": true,
+    "timeout_seconds": 300,
+    "memory_size": 1024,
+    "keep_warm": false,
+    "django_settings": "MetaAOT.settings",
+    "touch": false,
+    "iam_policy": [
+      {
+        "Effect": "Allow",
+        "Action": [
+          "logs:*"
+        ],
+        "Resource": "arn:aws:logs:*:*:*"
+      },
+      {
+        "Effect": "Allow",
+        "Action": [
+          "dynamodb:UpdateItem",
+          "dynamodb:GetItem"
+        ],
+        "Resource": "arn:aws:dynamodb:eu-west-1:542672133770:table/AnalysisJob"
+      }
+    ]
+  }
 }
