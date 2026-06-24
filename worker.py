@@ -134,10 +134,10 @@ def lambda_handler(event, context):
                 })
             green_count = sum(1 for x in aot_results if x["status"] == "GREEN")
             yellow_count = sum(1 for x in aot_results if x["status"] == "YELLOW")
-            next_layer_count = sum(1 for x in aot_results if x["status"] == "NEXT_LAYER")
+            next_layer_count = sum(1 for x in aot_results if x["status"] == "NO EVIDENCE")
 
             append_log(job_id, " --> AOT Analysis finished")
-            append_log(job_id, f" --> GREEN={green_count} YELLOW={yellow_count} NEXT_LAYER={next_layer_count}")
+            append_log(job_id, f" --> GREEN={green_count} YELLOW={yellow_count} NO EVIDENCE={next_layer_count}")
         except Exception as exc:
             handle_failure(job_id, exc, " [X] AOT Analysis Failed.")
             return {"statusCode": 200}
