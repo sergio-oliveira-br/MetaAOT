@@ -15,15 +15,17 @@
     <hr>
 
     <h2>Logging of steps</h2>
-    {% if steps_log %}
-      <ul>
-        {% for step in steps_log %}
-          <li><pre style="display:inline; margin:0; padding:0; white-space:pre-wrap;">{{ step }}</pre></li>
-        {% endfor %}
-      </ul>
-    {% else %}
-      <p>Waiting for URL...</p>
-    {% endif %}
+    <div id="log-container">
+      {% if steps_log %}
+        <ul id="log-list">
+          {% for step in steps_log %}
+            <li><pre style="display:inline; margin:0; padding:0; white-space:pre-wrap;">{{ step }}</pre></li>
+          {% endfor %}
+        </ul>
+      {% else %}
+        <p>Waiting for URL...</p>
+      {% endif %}
+    </div>
 
     <hr>
 
@@ -102,10 +104,33 @@
                     throw new Error(`HTTP ${response.status}`);
                 }
                 const data = await response.json();
+
+                if (data.steps_log && Array.isArray(data.steps_log)) {
+                    const logContainer = document.getElementById("log-container");
+                    if (logContainer) {
+                        // Garante que a tag <ul> existe dentro do container (substitui o texto de placeholder se necessário)
+                        let logList = document.getElementById("log-list");
+                        if (!logList) {
+                            logContainer.innerHTML = '<ul id="log-list"></ul>';
+                            logList = document.getElementById("log-list");
+                        }
+
+                        logList.innerHTML = "";
+                        data.steps_log.forEach(step => {
+                            const li = document.createElement("li");
+                            const pre = document.createElement("pre");
+                            pre.style.cssText = "display:inline; margin:0; padding:0; white-space:pre-wrap;";
+                            pre.textContent = step;
+                            li.appendChild(pre);
+                            logList.appendChild(li);
+                        });
+                    }
+                }
+
                 if (data.status === "COMPLETED") {
                     clearInterval(timerInterval);
 
-                    let resultsHtml = `<h3">[OK] Analysis Completed successfully!</h3>`;
+                    let resultsHtml = `<h3>[OK] Analysis Completed successfully!</h3>`;
                     resultsHtml += `<p>Total backend processing time: <strong>${secondsElapsed}s</strong></p>`;
 
                     if (data.result && data.result.summary) {
@@ -138,3 +163,5 @@
         poll();
     </script>
 {% endif %}
+  </body>
+</html>
