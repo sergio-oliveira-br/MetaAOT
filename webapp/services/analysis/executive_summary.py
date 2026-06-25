@@ -11,7 +11,7 @@ def build_executive_summary(dependency_summary, aot_summary):
 
     coverage = aot_summary.get("evidence_coverage", 0)
 
-    if total < 5:
+    if total < 1:
         readiness = "INSUFFICIENT DATA"
         message = (
             "The analysed dataset is too small to produce a reliable "
