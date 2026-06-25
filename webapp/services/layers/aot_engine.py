@@ -18,7 +18,7 @@ def analyze_component(group_id, artifact_id, version):
         if has_native_image_metadata(jar):
             return AOTAnalysisResult(
                 package_name=package_name,
-                status="GREEN",
+                status="HIGH EVIDENCE",
                 confidence="HIGH",
                 reason="Embedded Native Image metadata",
                 elapsed_ms=(time.perf_counter()-start) * 1000, layer=1)
@@ -26,7 +26,7 @@ def analyze_component(group_id, artifact_id, version):
     if has_reachability_metadata(group_id, artifact_id, version):
         return AOTAnalysisResult(
             package_name=package_name,
-            status="YELLOW",
+            status="MEDIUM EVIDENCE",
             confidence="MEDIUM",
             reason="Reachability Metadata Repository",
             elapsed_ms=(time.perf_counter()-start) * 1000,layer=2)
