@@ -5,23 +5,14 @@ import time
 import uuid
 
 import boto3
-from boto3.dynamodb import table
 from django.http import HttpResponse, JsonResponse
 from django.shortcuts import render
 from django.views.decorators.http import require_http_methods
 from webapp.forms import UrlForm
-from webapp.services.analysis.dependency_classifier import classify_direct_vs_transitive, ClassificationError
-from webapp.services.analysis.dependency_graph import build_graph_from_sbom
-from webapp.services.analysis.pom_parser import parse_pom_content, PomParseError
-from webapp.services.analysis.reporter import summarize_dependencies
-from webapp.services.analysis.sbom_components import extract_components
-from webapp.services.layers.aot_engine import analyze_component
 from webapp.services.github.extract_owner_repo import extract_owner_repo_from_url
 from webapp.services.github.check_public import is_github_repository_public, GitHubAPIError
 from webapp.services.github.detect_maven import is_java_maven_project
-from webapp.services.github.fetch_file import FetchError, fetch_file_content
 from webapp.services.github.pom_root_check import is_pom_in_root, PomCheckError
-from webapp.services.sbom.codebuild_runner import generate_sbom
 
 logger = logging.getLogger(__name__)
 lambda_client = boto3.client("lambda")
@@ -60,7 +51,7 @@ def index(request):
         steps_log.append(f"1) Initiating analysis for: {url}")
         owner_repo = extract_owner_repo_from_url(url)
         if not owner_repo:
-            steps_log.append(" [!] URL is not a valid GitHub repository. Terminating...")
+            steps_log.append("    [!] URL is not a valid GitHub repository. Terminating...")
             return render(request, 'index.html', {'form': form, 'steps_log': steps_log, 'result': result})
         owner, repo = owner_repo
         steps_log.append(f"2) Repository detected: {owner}/{repo}")
@@ -70,11 +61,11 @@ def index(request):
             steps_log.append("3) Checking if the repository is public...")
             is_public = is_github_repository_public(owner, repo)
             if not is_public:
-                steps_log.append(" [!] Repository is not public. Terminating analysis.")
+                steps_log.append("    [!] Repository is not public. Terminating analysis.")
                 return render(request, 'index.html', {'form': form, 'steps_log': steps_log, 'result': result})
-            steps_log.append(f" [OK] Public Repository Confirmed.")
+            steps_log.append(f"    [OK] Public Repository Confirmed.")
         except GitHubAPIError:
-            steps_log.append(" [X] Unexpected error while checking the repository.")
+            steps_log.append("    [X] Unexpected error while checking the repository.")
             return render(request, 'index.html', {'form': form, 'steps_log': steps_log, 'result': result})
 
         # Check if is Java/Maven
@@ -82,11 +73,11 @@ def index(request):
             steps_log.append("4) Check if the project appears to be Java/Maven...")
             is_java_maven = is_java_maven_project(owner, repo)
             if not is_java_maven:
-                steps_log.append(" [!] Project is not Java Maven. Terminating analysis.")
+                steps_log.append("    [!] Project is not Java Maven. Terminating analysis.")
                 return render(request, 'index.html', {'form': form, 'steps_log': steps_log, 'result': result})
-            steps_log.append(f" [OK] Java/Maven Confirmed.")
+            steps_log.append(f"    [OK] Java/Maven Confirmed.")
         except Exception:
-            steps_log.append(" [X] Unexpected error while checking the project")
+            steps_log.append("    [X] Unexpected error while checking the project")
             logger.exception("Unexpected error while checking the project: %s/%s", owner, repo)
             return render(request, 'index.html', {'form': form, 'steps_log': steps_log, 'result': result})
 
@@ -95,14 +86,13 @@ def index(request):
             steps_log.append("5) Checking if the POM.xml is in root of the repository...")
             pom_exists = is_pom_in_root(owner, repo)
             if not pom_exists:
-                steps_log.append(" [!] POM.xml not found in the root. Terminating analysis.")
+                steps_log.append("    [!] POM.xml not found in the root. Terminating analysis.")
                 return render(request, 'index.html', {'form': form, 'steps_log': steps_log, 'result': result})
-            steps_log.append(f" [OK] POM.xml found in root of the repository.")
+            steps_log.append(f"    [OK] POM.xml found in root of the repository.")
         except PomCheckError:
-            steps_log.append(" [X] Error checking POM.xml in the repository.")
+            steps_log.append("    [X] Error checking POM.xml in the repository.")
             return render(request, 'index.html', {'form': form, 'steps_log': steps_log, 'result': result})
 
-        steps_log.append(f"Calling the Worker...")
         job_id = str(uuid.uuid4())
         table_db.put_item(
             Item={
