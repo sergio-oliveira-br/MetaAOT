@@ -76,32 +76,32 @@ def lambda_handler(event, context):
         try:
             pom_text = fetch_file_content(owner, repo, "pom.xml")
             if not pom_text:
-                handle_failure(job_id, "Empty POM", " [!] Unable to download POM.xml. Closing analysis.")
+                handle_failure(job_id, "Empty POM", "    [!] Unable to download POM.xml. Closing analysis.")
                 return {"statusCode": 200}
-            append_log(job_id, " [OK] POM.xml downloaded successfully.")
+            append_log(job_id, "    [OK] POM.xml downloaded successfully.")
         except FetchError as exc:
-            handle_failure(job_id, exc, " [X] Error downloading POM.xml.")
+            handle_failure(job_id, exc, "    [X] Error downloading POM.xml.")
             return {"statusCode": 200}
 
         append_log(job_id, "7) Parsing POM.xml...")
         try:
             pom_deps = parse_pom_content(pom_text)
             if not pom_deps:
-                append_log(job_id, " [!] Unable to parse POM. It does not exist. Terminating analysis.")
-            append_log(job_id, f" [OK] {len(pom_deps)} dependencies declared found on POM.")
+                append_log(job_id, "    [!] Unable to parse POM. It does not exist. Terminating analysis.")
+            append_log(job_id, f"    [OK] {len(pom_deps)} dependencies declared found on POM.")
         except PomParseError as exc:
-            handle_failure(job_id, exc, " [X] Error parsing POM.xml.")
+            handle_failure(job_id, exc, "    [X] Error parsing POM.xml.")
             return {"statusCode": 200}
 
         append_log(job_id, "8) Generating CycloneDX SBOM using AWS CodeBuild...")
         try:
             sbom_text = generate_sbom(owner, repo)
             if not sbom_text:
-                handle_failure(job_id, "Empty SBOM", " [!] Unable to generate SBOM. Closing analysis.")
+                handle_failure(job_id, "Empty SBOM", "    [!] Unable to generate SBOM. Closing analysis.")
                 return {"statusCode": 200}
-            append_log(job_id, " [OK] SBOM Generated Successfully.")
+            append_log(job_id, "    [OK] SBOM Generated Successfully.")
         except Exception as exc:
-            handle_failure(job_id, exc, " [X] SBOM generation failed.")
+            handle_failure(job_id, exc, "    [X] SBOM generation failed.")
             return {"statusCode": 200}
 
         append_log(job_id, "9) Building Dependency Graph...")
@@ -110,20 +110,20 @@ def lambda_handler(event, context):
             if not graph:
                 handle_failure(job_id, "Empty Graph", " [!] Unable to build SBOM Graph. Closing analysis.")
                 return {"statusCode": 200}
-            append_log(job_id, f" [OK] Graph SBOM built with {len(graph)} nodes.")
+            append_log(job_id, f"    [OK] Graph SBOM built with {len(graph)} nodes.")
         except Exception as exc:
-            handle_failure(job_id, exc, " [X] Building Dependency Graph Failed.")
+            handle_failure(job_id, exc, "    [X] Building Dependency Graph Failed.")
             return {"statusCode": 200}
 
         append_log(job_id, "10) Extracting Components...")
         try:
             components = extract_components(sbom_text)
             if not components:
-                handle_failure(job_id, "No Components", " [!] No Components Found.")
+                handle_failure(job_id, "No Components", "     [!] No Components Found.")
                 return {"statusCode": 200}
-            append_log(job_id, f" [OK] {len(components)} Components Found.")
+            append_log(job_id, f"     [OK] {len(components)} Components Found.")
         except Exception as exc:
-            handle_failure(job_id, exc, " [X] Extracting Components Failed.")
+            handle_failure(job_id, exc, "     [X] Extracting Components Failed.")
             return {"statusCode": 200}
 
         append_log(job_id, "11) Analysing Native Image Compatibility...")
@@ -140,10 +140,10 @@ def lambda_handler(event, context):
             yellow_count = sum(1 for x in aot_results if x["status"] == "MEDIUM EVIDENCE")
             next_layer_count = sum(1 for x in aot_results if x["status"] == "NO EVIDENCE")
 
-            append_log(job_id, " --> AOT Analysis finished")
-            append_log(job_id, f" --> HIGH EVIDENCE={green_count} MEDIUM EVIDENCE={yellow_count} NO EVIDENCE={next_layer_count}")
+            append_log(job_id, "     [OK] AOT Analysis finished")
+            append_log(job_id, f"     [OK] HIGH EVIDENCE={green_count} MEDIUM EVIDENCE={yellow_count} NO EVIDENCE={next_layer_count}")
         except Exception as exc:
-            handle_failure(job_id, exc, " [X] AOT Analysis Failed.")
+            handle_failure(job_id, exc, "     [X] AOT Analysis Failed.")
             return {"statusCode": 200}
 
         append_log(job_id, "12) Classifying direct vs transitive dependencies...")
@@ -155,9 +155,9 @@ def lambda_handler(event, context):
             # readiness_report = build_readiness_report(aot_summary)
             executive_summary = build_executive_summary(dependency_summary, aot_summary)
             attention_points = build_attention_points(aot_results)
-            append_log(job_id, " [OK] Classification completed.")
+            append_log(job_id, "     [OK] Classification completed.")
         except ClassificationError as exc:
-            handle_failure(job_id, exc, " [X] Error classifying dependencies.")
+            handle_failure(job_id, exc, "     [X] Error classifying dependencies.")
             return {"statusCode": 200}
 
         result = {
@@ -167,7 +167,7 @@ def lambda_handler(event, context):
             "attention_points": attention_points,
             "aot_results": aot_results
         }
-        append_log(job_id, f"Finished analysis for job {job_id}.")
+        append_log(job_id, f"     [FINISHED] analysis for job {job_id}.")
 
         table.update_item(
             Key={"job_id": job_id},
@@ -181,5 +181,5 @@ def lambda_handler(event, context):
         }
 
     except Exception as exc:
-        handle_failure(job_id, exc, " [X] Unexpected Worker failure.")
+        handle_failure(job_id, exc, "     [X] Unexpected Worker failure.")
         raise exc
