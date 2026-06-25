@@ -4,14 +4,18 @@ import json
 import logging
 import boto3
 
+from webapp.services.analysis.attention_points import build_attention_points
+from webapp.services.analysis.executive_summary import build_executive_summary
+from webapp.services.analysis.readiness_report import build_readiness_report
 from webapp.services.github.fetch_file import fetch_file_content, FetchError
 from webapp.services.analysis.pom_parser import parse_pom_content, PomParseError
+from webapp.services.infra.dynamodb_serializer import convert_floats
 from webapp.services.sbom.codebuild_runner import generate_sbom
 from webapp.services.analysis.dependency_graph import build_graph_from_sbom
 from webapp.services.analysis.sbom_components import extract_components
 from webapp.services.layers.aot_engine import analyze_component
 from webapp.services.analysis.dependency_classifier import classify_direct_vs_transitive, ClassificationError
-from webapp.services.analysis.reporter import summarize_dependencies
+from webapp.services.analysis.reporter import summarize_dependencies, summarize_aot_results
 
 logger = logging.getLogger()
 logger.setLevel(logging.INFO)
@@ -132,12 +136,12 @@ def lambda_handler(event, context):
                     "layer": res.layer,
                     "package_name": res.package_name
                 })
-            green_count = sum(1 for x in aot_results if x["status"] == "GREEN")
-            yellow_count = sum(1 for x in aot_results if x["status"] == "YELLOW")
+            green_count = sum(1 for x in aot_results if x["status"] == "HIGH EVIDENCE")
+            yellow_count = sum(1 for x in aot_results if x["status"] == "MEDIUM EVIDENCE")
             next_layer_count = sum(1 for x in aot_results if x["status"] == "NO EVIDENCE")
 
             append_log(job_id, " --> AOT Analysis finished")
-            append_log(job_id, f" --> GREEN={green_count} YELLOW={yellow_count} NO EVIDENCE={next_layer_count}")
+            append_log(job_id, f" --> HIGH EVIDENCE={green_count} MEDIUM EVIDENCE={yellow_count} NO EVIDENCE={next_layer_count}")
         except Exception as exc:
             handle_failure(job_id, exc, " [X] AOT Analysis Failed.")
             return {"statusCode": 200}
@@ -145,20 +149,31 @@ def lambda_handler(event, context):
         append_log(job_id, "12) Classifying direct vs transitive dependencies...")
         try:
             classified = classify_direct_vs_transitive(pom_deps, graph)
-            summary = summarize_dependencies(classified)
+            # summary = summarize_dependencies(classified)
+            dependency_summary = summarize_dependencies(classified)
+            aot_summary = summarize_aot_results(aot_results)
+            # readiness_report = build_readiness_report(aot_summary)
+            executive_summary = build_executive_summary(dependency_summary, aot_summary)
+            attention_points = build_attention_points(aot_results)
             append_log(job_id, " [OK] Classification completed.")
         except ClassificationError as exc:
             handle_failure(job_id, exc, " [X] Error classifying dependencies.")
             return {"statusCode": 200}
 
-        result = {"summary": summary, "aot_results": aot_results}
+        result = {
+            "dependency_summary": dependency_summary,
+            "aot_summary": aot_summary,
+            "executive_summary": executive_summary,
+            "attention_points": attention_points,
+            "aot_results": aot_results
+        }
         append_log(job_id, f"Finished analysis for job {job_id}.")
 
         table.update_item(
             Key={"job_id": job_id},
             UpdateExpression="SET #s=:s, #r=:r",
             ExpressionAttributeNames={"#s": "status", "#r": "result"},
-            ExpressionAttributeValues={":s": "COMPLETED", ":r": result}
+            ExpressionAttributeValues={":s": "COMPLETED", ":r": convert_floats(result)}
         )
         return {
             "statusCode": 200,
