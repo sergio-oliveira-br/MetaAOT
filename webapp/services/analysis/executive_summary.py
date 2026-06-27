@@ -5,11 +5,11 @@ from typing import Dict
 def build_executive_summary(dependency_summary, aot_summary):
 
     total = aot_summary.get("total_components", 0)
-    high = aot_summary.get("high_evidence", 0)
-    medium = aot_summary.get("medium_evidence", 0)
     no_ev = aot_summary.get("no_evidence", 0)
-
     coverage = aot_summary.get("evidence_coverage", 0)
+    not_applicable = aot_summary.get("not_applicable", 0)
+    
+    effective_components = total - not_applicable
 
     if total < 1:
         readiness = "INSUFFICIENT DATA"
@@ -18,8 +18,8 @@ def build_executive_summary(dependency_summary, aot_summary):
             "migration assessment."
         )
 
-    elif no_ev / total >= 0.6:
-        readiness = "HIGH RISK"
+    elif no_ev / effective_components >= 0.6:
+        readiness = "Required Attention"
         message = (
             "Most components lack compatibility evidence. "
             "Migration will likely require significant effort and validation."
@@ -51,7 +51,5 @@ def build_executive_summary(dependency_summary, aot_summary):
         "evidence_coverage": coverage,
         "components_analyzed": total,
         "components_without_evidence": no_ev,
-        "high_evidence": high,
-        "medium_evidence": medium,
         "message": message
     }
