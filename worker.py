@@ -6,7 +6,6 @@ import boto3
 
 from webapp.services.analysis.attention_points import build_attention_points
 from webapp.services.analysis.executive_summary import build_executive_summary
-from webapp.services.analysis.readiness_report import build_readiness_report
 from webapp.services.github.fetch_file import fetch_file_content, FetchError
 from webapp.services.analysis.pom_parser import parse_pom_content, PomParseError
 from webapp.services.infra.dynamodb_serializer import convert_floats
@@ -121,9 +120,9 @@ def lambda_handler(event, context):
             if not components:
                 handle_failure(job_id, "No Components", "     [!] No Components Found.")
                 return {"statusCode": 200}
-            append_log(job_id, f"     [OK] {len(components)} Components Found.")
+            append_log(job_id, f"    [OK] {len(components)} Components Found.")
         except Exception as exc:
-            handle_failure(job_id, exc, "     [X] Extracting Components Failed.")
+            handle_failure(job_id, exc, "    [X] Extracting Components Failed.")
             return {"statusCode": 200}
 
         append_log(job_id, "11) Analysing Native Image Compatibility...")
@@ -136,14 +135,22 @@ def lambda_handler(event, context):
                     "layer": res.layer,
                     "package_name": res.package_name
                 })
-            green_count = sum(1 for x in aot_results if x["status"] == "HIGH EVIDENCE")
-            yellow_count = sum(1 for x in aot_results if x["status"] == "MEDIUM EVIDENCE")
-            next_layer_count = sum(1 for x in aot_results if x["status"] == "NO EVIDENCE")
+            embedded = sum(1 for x in aot_results if x["status"] == "EMBEDDED_METADATA")
+            official = sum(1 for x in aot_results if x["status"] == "OFFICIAL_METADATA")
+            not_tested = sum(1 for x in aot_results if x["status"] == "VERSION_NOT_TESTED")
+            not_applicable = sum(1 for x in aot_results if x["status"] == "NOT_APPLICABLE")
+            no_evidence = sum(1 for x in aot_results if x["status"] == "NO_EVIDENCE")
 
-            append_log(job_id, "     [OK] AOT Analysis finished")
-            append_log(job_id, f"     [OK] HIGH EVIDENCE={green_count} MEDIUM EVIDENCE={yellow_count} NO EVIDENCE={next_layer_count}")
+            append_log(
+                job_id,
+                f"Embedded={embedded} "
+                f"Official={official} "
+                f"VersionNotTested={not_tested} "
+                f"NotApplicable={not_applicable} "
+                f"NoEvidence={no_evidence}"
+        )
         except Exception as exc:
-            handle_failure(job_id, exc, "     [X] AOT Analysis Failed.")
+            handle_failure(job_id, exc, "    [X] AOT Analysis Failed.")
             return {"statusCode": 200}
 
         append_log(job_id, "12) Classifying direct vs transitive dependencies...")
@@ -155,9 +162,9 @@ def lambda_handler(event, context):
             # readiness_report = build_readiness_report(aot_summary)
             executive_summary = build_executive_summary(dependency_summary, aot_summary)
             attention_points = build_attention_points(aot_results)
-            append_log(job_id, "     [OK] Classification completed.")
+            append_log(job_id, "    [OK] Classification completed.")
         except ClassificationError as exc:
-            handle_failure(job_id, exc, "     [X] Error classifying dependencies.")
+            handle_failure(job_id, exc, "    [X] Error classifying dependencies.")
             return {"statusCode": 200}
 
         result = {
@@ -167,7 +174,7 @@ def lambda_handler(event, context):
             "attention_points": attention_points,
             "aot_results": aot_results
         }
-        append_log(job_id, f"     [FINISHED] analysis for job {job_id}.")
+        append_log(job_id, f"    [FINISHED] analysis for job {job_id}.")
 
         table.update_item(
             Key={"job_id": job_id},
@@ -181,5 +188,5 @@ def lambda_handler(event, context):
         }
 
     except Exception as exc:
-        handle_failure(job_id, exc, "     [X] Unexpected Worker failure.")
+        handle_failure(job_id, exc, "    [X] Unexpected Worker failure.")
         raise exc
