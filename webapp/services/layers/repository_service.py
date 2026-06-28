@@ -11,7 +11,7 @@ class RepositoryService:
 
     @staticmethod
     def analyse(group_id, artifact_id, version):
-        logger.info("\n[RepositoryService] Analysing %s:%s:%s", group_id, artifact_id, version)
+        logger.info("[RepositoryService] Analysing %s:%s:%s", group_id, artifact_id, version)
 
         metadata = RepositoryClient.load_index(group_id, artifact_id)
         result = RepositoryInterpreter.interpret(metadata, version)
