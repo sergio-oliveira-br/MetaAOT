@@ -6,7 +6,7 @@
     "project_name": "metaaot",
     "runtime": "python3.12",
     "s3_bucket": "zappa-kp2b4y5n5",
-    "timeout_seconds": 200,
+    "timeout_seconds": 300,
     "memory_size": 1024,
     "keep_warm": false,
     "manage_roles": true,
