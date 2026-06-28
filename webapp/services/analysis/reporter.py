@@ -66,5 +66,4 @@ def summarize_aot_results(aot_results: List[Dict[str, Any]]) -> Dict[str, Any]:
     else:
         summary["evidence_coverage"] = 100.0
 
-    logger.info(f"AOT Summary => {summary}")
     return summary
