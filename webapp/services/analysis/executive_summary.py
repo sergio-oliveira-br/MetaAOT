@@ -25,11 +25,18 @@ def build_executive_summary(dependency_summary, aot_summary):
             "Migration will likely require significant effort and validation."
         )
 
-    elif coverage >= 80:
+    elif coverage == 100:
         readiness = "No Migration Effort Expected"
         message = (
-            "Most components contain compatibility evidence. "
+            "All components contain compatibility evidence. "
             "Migration is expected to be smooth."
+    )
+
+    elif coverage >= 80:
+        readiness = "Low Migration Effort Expected"
+        message = (
+            "Most components contain compatibility evidence. "
+            "Few components require validation."
         )
 
     elif coverage >= 50:
