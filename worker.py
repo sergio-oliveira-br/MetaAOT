@@ -43,7 +43,7 @@ def handle_failure(job_id, exc, final_message):
         Key={"job_id": job_id},
         UpdateExpression="SET #s=:s, #e=:e",
         ExpressionAttributeNames={"#s": "status", "#e": "error"},
-        ExpressionAttributeValues={":s": "FAILED", ":e": str(exc)}
+        ExpressionAttributeValues={":s": "FAILED", ":e": traceback.format_exc()}
     )
 
 def lambda_handler(event, context):
