@@ -27,15 +27,6 @@ def analyze_component(group_id, artifact_id, version):
                 elapsed_ms=(time.perf_counter() - start) * 1000, layer=1
             )
 
-        # if has_native_image_metadata(jar):
-        #     return AOTAnalysisResult(
-        #         package_name=package_name,
-        #         status="EMBEDDED_METADATA",
-        #         confidence="HIGH",
-        #         reason="Embedded Native Image metadata",
-        #         elapsed_ms=(time.perf_counter()-start) * 1000, layer=1)
-
-
     repository = RepositoryService.analyse(group_id, artifact_id, version)
     if repository["status"] != "NO_EVIDENCE":
         return AOTAnalysisResult(
