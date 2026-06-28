@@ -3,7 +3,7 @@
 import time
 
 from .maven import download_jar
-from .jar_inspector import has_native_image_metadata
+from .jar_inspector import inspect_jar
 from .models import AOTAnalysisResult
 from .repository_service import RepositoryService
 
@@ -16,13 +16,24 @@ def analyze_component(group_id, artifact_id, version):
     jar = download_jar(group_id, artifact_id, version)
 
     if jar:
-        if has_native_image_metadata(jar):
+        jar_result = inspect_jar(jar)
+
+        if jar_result["status"] in ["EMBEDDED_METADATA", "NOT_APPLICABLE"]:
             return AOTAnalysisResult(
                 package_name=package_name,
-                status="EMBEDDED_METADATA",
-                confidence="HIGH",
-                reason="Embedded Native Image metadata",
-                elapsed_ms=(time.perf_counter()-start) * 1000, layer=1)
+                status=jar_result["status"],
+                confidence=jar_result["confidence"],
+                reason=jar_result["reason"],
+                elapsed_ms=(time.perf_counter() - start) * 1000, layer=1
+            )
+
+        # if has_native_image_metadata(jar):
+        #     return AOTAnalysisResult(
+        #         package_name=package_name,
+        #         status="EMBEDDED_METADATA",
+        #         confidence="HIGH",
+        #         reason="Embedded Native Image metadata",
+        #         elapsed_ms=(time.perf_counter()-start) * 1000, layer=1)
 
 
     repository = RepositoryService.analyse(group_id, artifact_id, version)
