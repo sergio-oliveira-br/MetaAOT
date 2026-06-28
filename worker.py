@@ -2,6 +2,7 @@
 
 import json
 import logging
+import traceback
 import boto3
 
 from webapp.services.analysis.attention_points import build_attention_points
@@ -111,7 +112,7 @@ def lambda_handler(event, context):
             append_log(job_id, f"    [OK] Graph SBOM built with {len(graph)} nodes.")
         except Exception as exc:
             handle_failure(job_id, exc, "    [X] Building Dependency Graph Failed.")
-            return {"statusCode": 200}
+            return {"statusCode": 500}
 
         append_log(job_id, "10) Extracting Components...")
         try:
@@ -122,7 +123,7 @@ def lambda_handler(event, context):
             append_log(job_id, f"    [OK] {len(components)} Components Found.")
         except Exception as exc:
             handle_failure(job_id, exc, "    [X] Extracting Components Failed.")
-            return {"statusCode": 200}
+            return {"statusCode": 500}
 
         append_log(job_id, "11) Analysing Native Image Compatibility...")
         try:
@@ -150,7 +151,7 @@ def lambda_handler(event, context):
         )
         except Exception as exc:
             handle_failure(job_id, exc, "    [X] AOT Analysis Failed.")
-            return {"statusCode": 200}
+            return {"statusCode": 500}
 
         append_log(job_id, "12) Classifying direct vs transitive dependencies...")
         try:
@@ -164,7 +165,7 @@ def lambda_handler(event, context):
             append_log(job_id, "    [OK] Classification completed.")
         except ClassificationError as exc:
             handle_failure(job_id, exc, "    [X] Error classifying dependencies.")
-            return {"statusCode": 200}
+            return {"statusCode": 500}
 
         result = {
             "dependency_summary": dependency_summary,
