@@ -47,8 +47,7 @@ def handle_failure(job_id, exc, final_message):
     )
 
 def lambda_handler(event, context):
-    logger.info("Worker Started")
-    logger.info("Received event: " + json.dumps(event, indent=2))
+    logger.info("Worker Started. Received event: " + json.dumps(event, indent=2))
 
     if "body" in event:
         try:
