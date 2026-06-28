@@ -35,7 +35,7 @@ def append_log(job_id, message):
             }
         )
     except Exception as e:
-        logger.error(f"Error updating steps_log in DynamoDB: {e}")
+        logger.exception(f"Error updating steps_log in DynamoDB: {e}")
 
 def handle_failure(job_id, exc, final_message):
     append_log(job_id, final_message)
