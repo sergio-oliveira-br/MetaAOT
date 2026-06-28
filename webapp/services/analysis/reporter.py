@@ -55,11 +55,12 @@ def summarize_aot_results(aot_results: List[Dict[str, Any]]) -> Dict[str, Any]:
         summary["embedded_metadata"]
         + summary["official_metadata"]
         + summary["version_not_tested"]
+        + summary["not_applicable"]
         + summary["no_evidence"]
     )
 
     if effective > 0:
-        supported = (summary["embedded_metadata"]+ summary["official_metadata"])
+        supported = (effective - summary["no_evidence"])
         summary["evidence_coverage"] = round(supported / effective * 100, 2)
         logger.info(summary["evidence_coverage"])
     else:
