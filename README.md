@@ -1,4 +1,4 @@
-# MetaAOT: Dependency Compatibility Evaluator for Ahead-of-Time Compilation
+# MetaAOT: From POM to Binary: Correlating Dependency Graph Properties with GraalVM Native Image Migration Effort
 
 This repository contains the prototype codebase for an academic research project developed as part of the Master of Science in Cloud Computing curriculum at the **National College of Ireland (NCI)**. 
 
