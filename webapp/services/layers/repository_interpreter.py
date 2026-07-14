@@ -12,7 +12,7 @@ class RepositoryInterpreter:
         if metadata is None:
             logger.info("[Interpreter] No index metadata.")
             return {
-                "status": "NO_EVIDENCE",
+                "status": "EVIDENCE_NOT_FOUND",
                 "confidence": "LOW",
                 "reason": "Repository index not found"
             }
@@ -20,7 +20,7 @@ class RepositoryInterpreter:
         if not isinstance(metadata, list):
             logger.warning("[Interpreter] Invalid JSON.")
             return {
-                "status": "NO_EVIDENCE",
+                "status": "EVIDENCE_NOT_FOUND",
                 "confidence": "LOW",
                 "reason": "Invalid index.json"
             }
@@ -63,7 +63,7 @@ class RepositoryInterpreter:
 
         logger.warning("[Interpreter] Could not classify metadata.")
         return {
-            "status": "NO_EVIDENCE",
+            "status": "EVIDENCE_NOT_FOUND",
             "confidence": "LOW",
             "reason": "Unable to classify"
         }
