@@ -139,7 +139,7 @@ def lambda_handler(event, context):
             official = sum(1 for x in aot_results if x["status"] == "OFFICIAL_METADATA")
             not_tested = sum(1 for x in aot_results if x["status"] == "VERSION_NOT_TESTED")
             not_applicable = sum(1 for x in aot_results if x["status"] == "NOT_APPLICABLE")
-            no_evidence = sum(1 for x in aot_results if x["status"] == "NO_EVIDENCE")
+            evidence_not_found = sum(1 for x in aot_results if x["status"] == "EVIDENCE_NOT_FOUND")
 
             append_log(
                 job_id,
@@ -147,7 +147,7 @@ def lambda_handler(event, context):
                 f"Official={official} "
                 f"VersionNotTested={not_tested} "
                 f"NotApplicable={not_applicable} "
-                f"NoEvidence={no_evidence}"
+                f"EvidenceNotFound={evidence_not_found}"
         )
         except Exception as exc:
             handle_failure(job_id, exc, "    [X] AOT Analysis Failed.")
