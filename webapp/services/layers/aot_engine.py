@@ -28,7 +28,7 @@ def analyze_component(group_id, artifact_id, version):
             )
 
     repository = RepositoryService.analyse(group_id, artifact_id, version)
-    if repository["status"] != "NO_EVIDENCE":
+    if repository["status"] != "EVIDENCE_NOT_FOUND":
         return AOTAnalysisResult(
             package_name=package_name,
             status=repository["status"],
@@ -38,7 +38,7 @@ def analyze_component(group_id, artifact_id, version):
 
     return AOTAnalysisResult(
         package_name=package_name,
-        status="NO_EVIDENCE",
+        status="EVIDENCE_NOT_FOUND",
         confidence="LOW",
         reason="No internal metadata found and no external reachability metadata available",
         elapsed_ms=(time.perf_counter()-start) * 1000,
