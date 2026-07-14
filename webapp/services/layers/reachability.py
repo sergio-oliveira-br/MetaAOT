@@ -72,7 +72,7 @@ def interpret_metadata(metadata, version):
     if metadata is None:
         logger.info("[Repository] No metadata available.")
         return {
-            "status": "NO_EVIDENCE",
+            "status": "EVIDENCE_NOT_FOUND",
             "confidence": "LOW",
             "reason": "Repository metadata not found"
         }
@@ -83,7 +83,7 @@ def interpret_metadata(metadata, version):
             type(metadata)
         )
         return {
-            "status": "NO_EVIDENCE",
+            "status": "EVIDENCE_NOT_FOUND",
             "confidence": "LOW",
             "reason": "Unexpected metadata format"
         }
@@ -91,7 +91,7 @@ def interpret_metadata(metadata, version):
     if len(metadata) == 0:
         logger.warning("[Repository] Empty metadata list.")
         return {
-            "status": "NO_EVIDENCE",
+            "status": "EVIDENCE_NOT_FOUND",
             "confidence": "LOW",
             "reason": "Empty metadata"
         }
@@ -148,7 +148,7 @@ def interpret_metadata(metadata, version):
     # Fallback
     logger.warning("[Repository] Unable to classify metadata.")
     return {
-        "status": "NO_EVIDENCE",
+        "status": "EVIDENCE_NOT_FOUND",
         "confidence": "LOW",
         "reason": "Unable to interpret metadata."
     }
