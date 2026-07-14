@@ -5,7 +5,7 @@ from typing import Dict
 def build_executive_summary(dependency_summary, aot_summary):
 
     total = aot_summary.get("total_components", 0)
-    no_ev = aot_summary.get("no_evidence", 0)
+    no_ev = aot_summary.get("evidence_not_found", 0)
     coverage = aot_summary.get("evidence_coverage", 0)
     not_applicable = aot_summary.get("not_applicable", 0)
     
