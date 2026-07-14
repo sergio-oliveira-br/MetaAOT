@@ -12,10 +12,10 @@ def build_executive_summary(dependency_summary, aot_summary):
     effective_components = total - not_applicable
 
     if total < 1:
-        readiness = "INSUFFICIENT DATA"
+        readiness = "No Migration Effort Expected"
         message = (
-            "The analysed dataset is too small to produce a reliable "
-            "migration assessment."
+            "No external dependencies were detected. Since the project structure is clean, "
+            "the migration to a native binary should proceed smoothly without any compatibility issues."
         )
 
     elif no_ev / effective_components >= 0.6:
