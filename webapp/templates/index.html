@@ -205,7 +205,7 @@
                             padding:15px;
                             border-radius:8px;
                             margin-bottom:20px;">
-                            <h3>Attention Points</h3>
+                            <h3>Evidence Gap</h3>
                             <ul>
                     `;
 
@@ -226,24 +226,22 @@
                     `;
 
                     aotResults.forEach(comp => {
-                        // 1. Mapeamento dinâmico de cores com base nas constantes reais do seu motor
-                        let statusColor = "#6c757d"; // Cinza padrão para NO_EVIDENCE / Desconhecido
+                        let statusColor = "#6c757d";
                         if (comp.status === "EMBEDDED_METADATA" || comp.status === "OFFICIAL_METADATA") {
-                            statusColor = "#28a745"; // Verde (Sucesso/Seguro)
+                            statusColor = "#28a745";
                         } else if (comp.status === "VERSION_NOT_TESTED" || comp.status === "NOT_APPLICABLE") {
-                            statusColor = "#f0ad4e"; // Amarelo/Laranja (Atenção/Isento)
-                        } else if (comp.status === "NO_EVIDENCE") {
-                            statusColor = "#dc3545"; // Vermelho (Ponto de Risco Crítico)
+                            statusColor = "#f0ad4e";
+                        } else if (comp.status === "EVIDENCE_NOT_FOUND") {
+                            statusColor = "#dc3545";
                         }
 
-                        // 2. Criação do Badge de Origem usando a função buildBadge existente
                         let originBadge = "";
                         if (comp.origin === "direct") {
-                            originBadge = buildBadge("Direct", "#0066cc"); // Azul
+                            originBadge = buildBadge("Direct", "#0066cc");
                         } else if (comp.origin === "transitive") {
-                            originBadge = buildBadge("Transitive", "#6f42c1"); // Roxo
+                            originBadge = buildBadge("Transitive", "#6f42c1");
                         } else if (comp.origin === "unknown") {
-                            originBadge = buildBadge("Unknown", "#495057"); // Grafite Escuro
+                            originBadge = buildBadge("Unknown", "#495057");
                         }
 
                         resultsHtml += `
