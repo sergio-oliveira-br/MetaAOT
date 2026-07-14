@@ -25,7 +25,7 @@ def summarize_aot_results(aot_results: List[Dict[str, Any]]) -> Dict[str, Any]:
         "official_metadata": 0,
         "version_not_tested": 0,
         "not_applicable": 0,
-        "no_evidence": 0
+        "evidence_not_found": 0
     }
 
     for item in aot_results:
@@ -44,23 +44,23 @@ def summarize_aot_results(aot_results: List[Dict[str, Any]]) -> Dict[str, Any]:
         elif status == "NOT_APPLICABLE":
             summary["not_applicable"] += 1
 
-        elif status == "NO_EVIDENCE":
-            summary["no_evidence"] += 1
+        elif status == "EVIDENCE_NOT_FOUND":
+            summary["evidence_not_found"] += 1
 
         else:
             logger.warning(f"Unknown status: {status}")
-            summary["no_evidence"] += 1
+            summary["evidence_not_found"] += 1
 
     effective = (
         summary["embedded_metadata"]
         + summary["official_metadata"]
         + summary["version_not_tested"]
         + summary["not_applicable"]
-        + summary["no_evidence"]
+        + summary["evidence_not_found"]
     )
 
     if effective > 0:
-        supported = (effective - summary["no_evidence"])
+        supported = (effective - summary["evidence_not_found"])
         summary["evidence_coverage"] = round(supported / effective * 100, 2)
         logger.info(summary["evidence_coverage"])
     else:
