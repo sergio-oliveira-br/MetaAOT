@@ -22,7 +22,7 @@ logger.setLevel(logging.INFO)
 
 dynamodb = boto3.resource("dynamodb")
 table = dynamodb.Table("AnalysisJob")
-MAX_COMPONENTS_ANALYZED = 100
+MAX_COMPONENTS_ANALYZED = 300
 
 def append_log(job_id, message):
     logger.info(f"[{job_id}] {message}")
@@ -156,10 +156,9 @@ def lambda_handler(event, context):
         append_log(job_id, "12) Classifying direct vs transitive dependencies...")
         try:
             classified = classify_direct_vs_transitive(pom_deps, graph)
-            # summary = summarize_dependencies(classified)
+            origin_map = {item["name"]: item["origin"] for item in classified}
             dependency_summary = summarize_dependencies(classified)
             aot_summary = summarize_aot_results(aot_results)
-            # readiness_report = build_readiness_report(aot_summary)
             executive_summary = build_executive_summary(dependency_summary, aot_summary)
             attention_points = build_attention_points(aot_results)
             append_log(job_id, "    [OK] Classification completed.")
@@ -167,14 +166,33 @@ def lambda_handler(event, context):
             handle_failure(job_id, exc, "    [X] Error classifying dependencies.")
             return {"statusCode": 500}
 
+
+        aot_results_classified = []
+        for comp in aot_results:
+            if hasattr(comp, "__dict__") and not isinstance(comp, dict):
+                comp_dict = {
+                    "package_name": getattr(comp, "package_name", ""),
+                    "status": getattr(comp, "status", ""),
+                    "confidence": getattr(comp, "confidence", ""),
+                    "reason": getattr(comp, "reason", ""),
+                    "layer": getattr(comp, "layer", ""),
+                    "elapsed_ms": getattr(comp, "elapsed_ms", 0)
+                }
+            else:
+                comp_dict = dict(comp)
+
+            pkg_name = comp_dict.get("package_name", "")
+            comp_dict["origin"] = origin_map.get(pkg_name, "transitive")
+            aot_results_classified.append(comp_dict)
+
         result = {
             "dependency_summary": dependency_summary,
             "aot_summary": aot_summary,
             "executive_summary": executive_summary,
             "attention_points": attention_points,
-            "aot_results": aot_results
+            "aot_results": aot_results_classified
         }
-        append_log(job_id, f"    [FINISHED] analysis for job {job_id}.")
+        append_log(job_id, f"    [FINISHED] Job {job_id}.")
 
         table.update_item(
             Key={"job_id": job_id},
