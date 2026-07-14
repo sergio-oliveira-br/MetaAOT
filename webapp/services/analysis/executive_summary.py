@@ -32,24 +32,10 @@ def build_executive_summary(dependency_summary, aot_summary):
             "Migration is expected to be smooth."
     )
 
-    elif coverage >= 80:
-        readiness = "Low Migration Effort Expected"
-        message = (
-            "Most components contain compatibility evidence. "
-            "Few components require validation."
-        )
-
-    elif coverage >= 50:
-        readiness = "Moderate Migration Effort Expected"
-        message = (
-            "A mixed evidence profile was detected. "
-            "Some components require validation."
-        )
-
     else:
-        readiness = "Significant Migration Effort Expected"
+        readiness = "Required Attention"
         message = (
-            "A large portion of the dependency graph lacks evidence. "
+            "One or more dependency lacks evidence. "
             "Migration may require substantial work."
         )
 
