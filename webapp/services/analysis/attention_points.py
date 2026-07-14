@@ -7,6 +7,6 @@ MAX_POINTS = 200
 def build_attention_points(aot_results: List[Dict]) -> List[str]:
     candidates = []
     for item in aot_results:
-        if item.get("status") == "NO_EVIDENCE":
+        if item.get("status") == "EVIDENCE_NOT_FOUND":
             candidates.append(item["package_name"])
     return sorted(candidates)[:MAX_POINTS]
