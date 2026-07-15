@@ -63,7 +63,7 @@ def index(request):
             if not is_public:
                 steps_log.append("    [!] Repository is not public. Terminating analysis.")
                 return render(request, 'index.html', {'form': form, 'steps_log': steps_log, 'result': result})
-            steps_log.append(f"    [OK] Public Repository Confirmed.")
+            steps_log.append(f"    [OK] Public repository confirmed.")
         except GitHubAPIError:
             steps_log.append("    [X] Unexpected error while checking the repository.")
             return render(request, 'index.html', {'form': form, 'steps_log': steps_log, 'result': result})
@@ -75,7 +75,7 @@ def index(request):
             if not is_java_maven:
                 steps_log.append("    [!] Project is not Java Maven. Terminating analysis.")
                 return render(request, 'index.html', {'form': form, 'steps_log': steps_log, 'result': result})
-            steps_log.append(f"    [OK] Java/Maven Confirmed.")
+            steps_log.append(f"    [OK] Java/Maven confirmed.")
         except Exception:
             steps_log.append("    [X] Unexpected error while checking the project")
             logger.exception("Unexpected error while checking the project: %s/%s", owner, repo)
