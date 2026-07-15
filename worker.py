@@ -71,6 +71,8 @@ def lambda_handler(event, context):
             "body": json.dumps({"error": "Missing parameters", "received": event})
         }
 
+    excluded_count = 0
+
     try:
         append_log(job_id, "6) Downloading pom.xml...")
         try:
@@ -86,12 +88,39 @@ def lambda_handler(event, context):
         append_log(job_id, "7) Parsing POM.xml...")
         try:
             pom_deps = parse_pom_content(pom_text)
-            if not pom_deps:
-                append_log(job_id, "    [!] Unable to parse POM. It does not exist. Terminating analysis.")
             append_log(job_id, f"    [OK] {len(pom_deps)} dependencies declared found on POM.")
         except PomParseError as exc:
             handle_failure(job_id, exc, "    [X] Error parsing POM.xml.")
             return {"statusCode": 200}
+
+        if len(pom_deps) == 0:
+            append_log(job_id, "    [OK] Clean project detected. Bypassing downstream analysis steps.")
+
+            dependency_summary = summarize_dependencies([])
+            aot_summary = summarize_aot_results([])
+            executive_summary = build_executive_summary(dependency_summary, aot_summary)
+            attention_points = build_attention_points([])
+
+            result = {
+                "dependency_summary": dependency_summary,
+                "aot_summary": aot_summary,
+                "executive_summary": executive_summary,
+                "attention_points": attention_points,
+                "aot_results": []
+            }
+
+            append_log(job_id, f"    [FINISHED] Job {job_id} successfully (No dependencies to analyze).")
+
+            table.update_item(
+                Key={"job_id": job_id},
+                UpdateExpression="SET #s=:s, #r=:r",
+                ExpressionAttributeNames={"#s": "status", "#r": "result"},
+                ExpressionAttributeValues={":s": "COMPLETED", ":r": convert_floats(result)}
+            )
+            return {
+                "statusCode": 200,
+                "body": json.dumps({"message": f"Job {job_id} processed successfully (0 dependencies found)."})
+            }
 
         append_log(job_id, "8) Generating CycloneDX SBOM using AWS CodeBuild...")
         try:
@@ -99,7 +128,7 @@ def lambda_handler(event, context):
             if not sbom_text:
                 handle_failure(job_id, "Empty SBOM", "    [!] Unable to generate SBOM. Closing analysis.")
                 return {"statusCode": 200}
-            append_log(job_id, "    [OK] SBOM Generated Successfully.")
+            append_log(job_id, "    [OK] SBOM generated successfully.")
         except Exception as exc:
             handle_failure(job_id, exc, "    [X] SBOM generation failed.")
             return {"statusCode": 200}
@@ -112,7 +141,7 @@ def lambda_handler(event, context):
                 return {"statusCode": 200}
             append_log(job_id, f"    [OK] Graph SBOM built with {len(graph)} nodes.")
         except Exception as exc:
-            handle_failure(job_id, exc, "    [X] Building Dependency Graph Failed.")
+            handle_failure(job_id, exc, "    [X] Building dependency graph failed.")
             return {"statusCode": 500}
 
         append_log(job_id, "10) Extracting Components...")
@@ -121,9 +150,9 @@ def lambda_handler(event, context):
             if not components:
                 handle_failure(job_id, "No Components", "     [!] No Components Found.")
                 return {"statusCode": 200}
-            append_log(job_id, f"    [OK] {len(components)} Components Found.")
+            append_log(job_id, f"    [OK] {len(components)} components found.")
         except Exception as exc:
-            handle_failure(job_id, exc, "    [X] Extracting Components Failed.")
+            handle_failure(job_id, exc, "    [X] Extracting components failed.")
             return {"statusCode": 500}
 
         append_log(job_id, "11) Analysing Native Image Compatibility...")
@@ -140,6 +169,9 @@ def lambda_handler(event, context):
                     "version": component["version"],
                     "bom_ref": component["bom_ref"],
                 })
+
+            append_log(job_id, f"    [OK] Analysis completed")
+
             embedded = sum(1 for x in aot_results if x["status"] == "EMBEDDED_METADATA")
             official = sum(1 for x in aot_results if x["status"] == "OFFICIAL_METADATA")
             not_tested = sum(1 for x in aot_results if x["status"] == "VERSION_NOT_TESTED")
@@ -147,20 +179,20 @@ def lambda_handler(event, context):
             evidence_not_found = sum(1 for x in aot_results if x["status"] == "EVIDENCE_NOT_FOUND")
             supported_transitively = sum(1 for x in aot_results if x["status"] == "SUPPORTED_TRANSITIVELY")
 
-            append_log(
-                job_id,
-                f"Embedded={embedded} "
-                f"Official={official} "
-                f"VersionNotTested={not_tested} "
-                f"NotApplicable={not_applicable} "
-                f"EvidenceNotFound={evidence_not_found}"
-                f"SupportedTransitively={supported_transitively}"
-        )
+        #     append_log(
+        #         job_id,
+        #         f"Embedded={embedded} "
+        #         f"Official={official} "
+        #         f"VersionNotTested={not_tested} "
+        #         f"NotApplicable={not_applicable} "
+        #         f"EvidenceNotFound={evidence_not_found}"
+        #         f"SupportedTransitively={supported_transitively}"
+        # )
         except Exception as exc:
             handle_failure(job_id, exc, "    [X] AOT Analysis Failed.")
             return {"statusCode": 500}
 
-        append_log(job_id, "12) Classifying direct vs transitive dependencies...")
+        append_log(job_id, "12) Classifying Dependencies...")
         try:
             classified = classify_direct_vs_transitive(pom_deps, graph)
             origin_map = {item["name"]: item["origin"] for item in classified}
