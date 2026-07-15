@@ -6,6 +6,7 @@ import traceback
 import boto3
 
 from webapp.services.analysis.attention_points import build_attention_points
+from webapp.services.analysis.evidence_resolver import review_missing_evidence
 from webapp.services.analysis.executive_summary import build_executive_summary
 from webapp.services.github.fetch_file import fetch_file_content, FetchError
 from webapp.services.analysis.pom_parser import parse_pom_content, PomParseError
@@ -133,13 +134,18 @@ def lambda_handler(event, context):
                 aot_results.append({
                     "status": res.status,
                     "layer": res.layer,
-                    "package_name": res.package_name
+                    "package_name": res.package_name,
+                    "group": component["group"],
+                    "name": component["name"],
+                    "version": component["version"],
+                    "bom_ref": component["bom_ref"],
                 })
             embedded = sum(1 for x in aot_results if x["status"] == "EMBEDDED_METADATA")
             official = sum(1 for x in aot_results if x["status"] == "OFFICIAL_METADATA")
             not_tested = sum(1 for x in aot_results if x["status"] == "VERSION_NOT_TESTED")
             not_applicable = sum(1 for x in aot_results if x["status"] == "NOT_APPLICABLE")
             evidence_not_found = sum(1 for x in aot_results if x["status"] == "EVIDENCE_NOT_FOUND")
+            supported_transitively = sum(1 for x in aot_results if x["status"] == "SUPPORTED_TRANSITIVELY")
 
             append_log(
                 job_id,
@@ -148,6 +154,7 @@ def lambda_handler(event, context):
                 f"VersionNotTested={not_tested} "
                 f"NotApplicable={not_applicable} "
                 f"EvidenceNotFound={evidence_not_found}"
+                f"SupportedTransitively={supported_transitively}"
         )
         except Exception as exc:
             handle_failure(job_id, exc, "    [X] AOT Analysis Failed.")
@@ -158,6 +165,7 @@ def lambda_handler(event, context):
             classified = classify_direct_vs_transitive(pom_deps, graph)
             origin_map = {item["name"]: item["origin"] for item in classified}
             dependency_summary = summarize_dependencies(classified)
+            aot_results = review_missing_evidence(aot_results, graph)
             aot_summary = summarize_aot_results(aot_results)
             executive_summary = build_executive_summary(dependency_summary, aot_summary)
             attention_points = build_attention_points(aot_results)
@@ -173,6 +181,8 @@ def lambda_handler(event, context):
                 comp_dict = {
                     "package_name": getattr(comp, "package_name", ""),
                     "status": getattr(comp, "status", ""),
+                    "effective_status": getattr(comp, "effective_status", ""),
+                    "evidence_source": getattr(comp, "evidence_source", []),
                     "confidence": getattr(comp, "confidence", ""),
                     "reason": getattr(comp, "reason", ""),
                     "layer": getattr(comp, "layer", ""),
