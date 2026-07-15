@@ -161,6 +161,7 @@
 
                     resultsHtml += `
                     <h2>Analysis Completed</h2>
+                    <p style="font-size: 0.9em; color: #888; margin-top: -10px; margin-bottom: 15px;">Job ID: ${jobId}</p>
                     <p>
                         Total processing time:
                         <strong>${secondsElapsed}s</strong>
@@ -191,22 +192,22 @@
                         </div>
                     `;
                     }
-                    resultsHtml += `
-                    <div style="
-                        border:1px solid #ddd;
-                        padding:15px;
-                        border-radius:8px;
-                        margin-bottom:20px;">
+                    //resultsHtml += `
+                    //<div style="
+                    //    border:1px solid #ddd;
+                    //    padding:15px;
+                    //    border-radius:8px;
+                    //    margin-bottom:20px;">
 
-                        <h3>Dependency Classification</h3>
-                        <ul>
-                            <li><strong>Total:</strong> ${dependencySummary.total || 0}</li>
-                            <li><strong>Direct:</strong> ${dependencySummary.direct || 0}</li>
-                            <li><strong>Transitive:</strong> ${dependencySummary.transitive || 0}</li>
-                            <li><strong>Unknown:</strong> ${dependencySummary.unknown || 0}</li>
-                        </ul>
-                    </div>
-                `;
+                    //    <h3>Dependency Classification</h3>
+                    //    <ul>
+                    //        <li><strong>Total:</strong> ${dependencySummary.total || 0}</li>
+                    //        <li><strong>Direct:</strong> ${dependencySummary.direct || 0}</li>
+                    //        <li><strong>Transitive:</strong> ${dependencySummary.transitive || 0}</li>
+                    //        <li><strong>Unknown:</strong> ${dependencySummary.unknown || 0}</li>
+                    //    </ul>
+                    //</div>
+                //`;
                     if (attentionPoints.length > 0) {
                         resultsHtml += `
                         <div style="
@@ -300,7 +301,7 @@
 
                                 evidenceInfo = `
             <div style="
-                margin-left:190px;
+                margin-left:20px;
                 font-size:12px;
                 color:#555;
                 margin-top:4px;
@@ -377,6 +378,7 @@
                     clearInterval(timerInterval);
                     document.getElementById("results-section").innerHTML = `
                     <h3>Analysis Failed</h3>
+                    <p style="font-size: 0.9em; color: #888; margin-top: -5px; margin-bottom: 15px;">Job ID: ${jobId}</p>
                     <pre style="
                         background:#fff5f5;
                         border:1px solid #ffc1c1;
