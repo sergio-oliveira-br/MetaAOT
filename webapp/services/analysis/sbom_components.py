@@ -8,6 +8,7 @@ def extract_components(sbom_text):
 
     for component in sbom.get("components", []):
         result.append({
+            "bom_ref": component["bom-ref"],
             "group": component.get("group"),
             "name": component.get("name"),
             "version": component.get("version")})
