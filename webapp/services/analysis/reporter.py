@@ -30,7 +30,6 @@ def summarize_aot_results(aot_results: List[Dict[str, Any]]) -> Dict[str, Any]:
 
     for item in aot_results:
         status = (item.get("status") or "").strip().upper()
-        logger.info(f"AOT Status => {status}")
 
         if status == "EMBEDDED_METADATA":
             summary["embedded_metadata"] += 1
