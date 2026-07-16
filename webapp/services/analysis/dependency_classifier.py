@@ -30,6 +30,60 @@ def _parse_purl_details(purl: str) -> tuple:
         return purl, "", ""
 
 
+def _find_resolved_scope(target_purl: str, sbom_graph: Dict[str, Set[str]], pom_map: Dict[str, Dict]) -> str:
+    parent_map = {}
+    for parent, children in sbom_graph.items():
+        for child in children:
+            if child not in parent_map:
+                parent_map[child] = set()
+            parent_map[child].add(parent)
+
+    if target_purl not in parent_map:
+        return "compile"
+
+    # Performs a search (BFS) to find all direct ancestors (roots)
+    visited = set()
+    queue = [target_purl]
+    direct_ancestors = set()
+
+    while queue:
+        current = queue.pop(0)
+        if current in visited:
+            continue
+        visited.add(current)
+
+        parents = parent_map.get(current, set())
+        if not parents:
+            # top of graph
+            direct_ancestors.add(current)
+        else:
+            for p in parents:
+                # If the father is already a direct dependency declared in the POM, he is a direct ancestor
+                p_group, p_art, _ = _parse_purl_details(p)
+                p_coord = f"{p_group}:{p_art}"
+                if _normalize_node(p_coord) in pom_map:
+                    direct_ancestors.add(p)
+                else:
+                    queue.append(p)
+
+    # Analyzes the scopes of direct ancestors found
+    ancestor_scopes = set()
+    for ancestor in direct_ancestors:
+        a_group, a_art, _ = _parse_purl_details(ancestor)
+        a_coord_norm = _normalize_node(f"{a_group}:{a_art}")
+        dep_info = pom_map.get(a_coord_norm, {})
+        scope = dep_info.get("scope", "compile")
+        ancestor_scopes.add(scope.lower())
+
+    if not ancestor_scopes:
+        return "compile"
+
+    if ancestor_scopes == {"test"}:
+        return "test"
+
+    return "compile"
+
+
 def classify_direct_vs_transitive(pom_deps: List[Dict[str, str]], sbom_graph: Dict[str, Set[str]]) -> List[Dict]:
     try:
         pom_map = {}
@@ -60,7 +114,7 @@ def classify_direct_vs_transitive(pom_deps: List[Dict[str, str]], sbom_graph: Di
                 evidence = [f"Matched direct POM dependency mapped via SBOM node: {purl}"]
             else:
                 origin = "transitive"
-                declared_scope = "transitive"
+                declared_scope = _find_resolved_scope(purl, sbom_graph, pom_map)
                 optional = "false"
                 evidence = [f"Discovered as runtime transitive dependency in SBOM graph: {purl}"]
 
