@@ -88,21 +88,6 @@
             document.getElementById("timer").innerText = secondsElapsed + "s";
         }, 1000);
 
-        function buildBadge(text, color) {
-            return `
-            <span style="
-                background:${color};
-                color:white;
-                padding:4px 10px;
-                border-radius:12px;
-                font-size:12px;
-                font-weight:bold;
-                margin-right:6px;">
-                ${text}
-            </span>
-        `;
-        }
-
         async function poll() {
             if (secondsElapsed >= MAX_WAIT_SECONDS) {
                 clearInterval(timerInterval);
@@ -192,186 +177,127 @@
                         </div>
                     `;
                     }
-                    //resultsHtml += `
-                    //<div style="
-                    //    border:1px solid #ddd;
-                    //    padding:15px;
-                    //    border-radius:8px;
-                    //    margin-bottom:20px;">
 
-                    //    <h3>Dependency Classification</h3>
-                    //    <ul>
-                    //        <li><strong>Total:</strong> ${dependencySummary.total || 0}</li>
-                    //        <li><strong>Direct:</strong> ${dependencySummary.direct || 0}</li>
-                    //        <li><strong>Transitive:</strong> ${dependencySummary.transitive || 0}</li>
-                    //        <li><strong>Unknown:</strong> ${dependencySummary.unknown || 0}</li>
-                    //    </ul>
-                    //</div>
-                //`;
+                    // 1. Evidence Gap Analysis (Highlighted Primary Block)
                     if (attentionPoints.length > 0) {
                         resultsHtml += `
                         <div style="
-                            border:1px solid #f0ad4e;
-                            background:#fffaf0;
-                            padding:15px;
-                            border-radius:8px;
-                            margin-bottom:20px;">
-                            <h3>Evidence Gap</h3>
-                            <ul>
-                    `;
+                            border: 1px solid #ddd;
+                            padding: 15px;
+                            border-radius: 8px;
+                            margin-bottom: 20px;
+                            background: #fafafa;">
+                            <h3 style="margin-top: 0; color: #333;">Evidence Gap Analysis</h3>
+                            <p style="font-size: 0.9em; color: #666; margin-bottom: 15px;">
+                                Dependencies where no active native AOT configuration evidence was detected during this analysis.
+                            </p>
+                            <ul style="padding-left: 20px; margin: 0; line-height: 1.6;">
+                        `;
 
                         attentionPoints.forEach(point => {
-                            resultsHtml += `<li>${point}</li>`;
+                            if (point.is_mitigated) {
+                                resultsHtml += `
+                                <li style="margin-bottom: 6px; font-family: monospace; font-size: 13px; color: #777;">
+                                    <span>${point.package_name}</span>
+                                    <span style="color: #999; font-style: italic; font-size: 0.9em;">— ${point.justification}</span>
+                                </li>`;
+                            } else {
+                                resultsHtml += `
+                                <li style="margin-bottom: 6px; font-family: monospace; font-size: 13px; color: #333;">
+                                    <strong style="color: #dc3545;">[ATTENTION]</strong>
+                                    <strong>${point.package_name}</strong>
+                                    <span style="color: #555; font-size: 0.9em;">— ${point.justification}</span>
+                                </li>`;
+                            }
                         });
+
                         resultsHtml += `
                             </ul>
                         </div>
-                    `;
+                        `;
                     }
 
+                    // 2. Component Details (Desaturated Secondary Block)
                     if (aotResults.length > 0) {
                         resultsHtml += `
-                        <details open>
-                            <summary style="cursor: pointer; padding: 5px 0; font-weight: bold;">
+                        <details open style="margin-top: 20px;">
+                            <summary style="cursor: pointer; padding: 5px 0; font-weight: bold; font-size: 1.1em; color: #333;">
                                 Component Details (${aotResults.length})
                             </summary>
-                            <ul style="margin-top:10px; list-style: none; padding-left: 0;">
-                    `;
+                            <ul style="margin-top: 10px; list-style: none; padding-left: 0; line-height: 1.6;">
+                        `;
 
                         aotResults.forEach(comp => {
                             const displayStatus = comp.effective_status || comp.status;
-                            let statusColor = "#6c757d";
+                            let statusColor = "#777";
 
-
-                            if (
-                                displayStatus === "EMBEDDED_METADATA" ||
-                                displayStatus === "OFFICIAL_METADATA"
-                            ) {
-                                statusColor = "#28a745";
-
-                            } else if (
-                                displayStatus === "SUPPORTED_TRANSITIVELY"
-                            ) {
-                                statusColor = "#17a2b8";
-
-                            } else if (
-                                displayStatus === "VERSION_NOT_TESTED" ||
-                                displayStatus === "NOT_APPLICABLE"
-                            ) {
-                                statusColor = "#f0ad4e";
-
-                            } else if (
-                                displayStatus === "EVIDENCE_NOT_FOUND"
-                            ) {
-                                statusColor = "#dc3545";
+                            // Muted, desaturated terminal colors for Status
+                            if (displayStatus === "EMBEDDED_METADATA" || displayStatus === "OFFICIAL_METADATA") {
+                                statusColor = "#4b8b54"; // Muted sage green
+                            } else if (displayStatus === "SUPPORTED_TRANSITIVELY") {
+                                statusColor = "#467a9c"; // Muted slate blue
+                            } else if (displayStatus === "VERSION_NOT_TESTED" || displayStatus === "NOT_APPLICABLE") {
+                                statusColor = "#a88544"; // Muted ochre
+                            } else if (displayStatus === "EVIDENCE_NOT_FOUND") {
+                                statusColor = "#b55353"; // Muted red
                             }
 
-
-                            let originBadge = "";
-
+                            // Dynamic subtle styling for Origin
+                            let originColor = "#888";
                             if (comp.origin === "direct") {
-
-                                originBadge = buildBadge(
-                                    "Direct",
-                                    "#0066cc"
-                                );
-
+                                originColor = "#5a6e85"; // Subtle steel blue for direct
                             } else if (comp.origin === "transitive") {
-
-                                originBadge = buildBadge(
-                                    "Transitive",
-                                    "#6f42c1"
-                                );
-
+                                originColor = "#969696"; // Lighter gray for transitive
                             } else if (comp.origin === "unknown") {
-
-                                originBadge = buildBadge(
-                                    "Unknown",
-                                    "#495057"
-                                );
+                                originColor = "#b0b0b0"; // Very faint gray for unknown
                             }
 
+                            const originText = comp.origin ? `(${comp.origin})` : "";
 
-                            let evidenceInfo = "";
-
-                            if (
-                                comp.evidence_source &&
-                                comp.evidence_source.source
-                            ) {
-
-                                evidenceInfo = `
-            <div style="
-                margin-left:20px;
-                font-size:12px;
-                color:#555;
-                margin-top:4px;
-            ">
-                Evidence found through:
-                ${comp.evidence_source.source}
-            </div>
-        `;
+                            // Inline evidence source (no line break)
+                            let evidenceText = "";
+                            if (comp.evidence_source && comp.evidence_source.source) {
+                                evidenceText = ` <span style="color: #888; font-style: italic;">— via ${comp.evidence_source.source}</span>`;
                             }
-
 
                             resultsHtml += `
+                            <li style="
+                                margin-bottom: 6px;
+                                font-family: monospace;
+                                font-size: 13px;
+                                display: flex;
+                                align-items: baseline;
+                                color: #555;
+                            ">
+                                <!-- Status Column -->
+                                <span style="color: ${statusColor}; font-weight: bold; width: 220px; display: inline-block; flex-shrink: 0;">
+                                    [${displayStatus}]
+                                </span>
 
-        <li style="
-            margin-bottom: 12px;
-            font-family: monospace;
-            font-size: 14px;
-        ">
+                                <!-- Origin Column (with guaranteed spacing) -->
+                                <span style="color: ${originColor}; width: 110px; display: inline-block; flex-shrink: 0; margin-right: 15px;">
+                                    ${originText}
+                                </span>
 
-            <div style="
-                display:flex;
-                align-items:center;
-            ">
+                                <!-- Package Name & Inline Evidence -->
+                                <span style="color: #333; word-break: break-all;">
+                                    ${comp.package_name}${evidenceText}
+                                </span>
 
-                <strong style="
-                    color:${statusColor};
-                    width:250px;
-                    display:inline-block;
-                ">
-                    [${displayStatus}]
-                </strong>
-
-
-                ${originBadge}
-
-
-                <span style="
-                    margin-left:5px;
-                    color:#333;
-                ">
-                    ${comp.package_name}
-                </span>
-
-
-                <span style="
-                    color:#888;
-                    margin-left:auto;
-                    font-size:0.85em;
-                ">
-                    (Layer ${comp.layer})
-                </span>
-
-            </div>
-
-
-            ${evidenceInfo}
-
-
-        </li>
-
-    `;
+                                <!-- Layer Column (aligned to the right) -->
+                                <span style="color: #bbb; margin-left: auto; padding-left: 10px; font-size: 0.9em; flex-shrink: 0;">
+                                    Layer ${comp.layer}
+                                </span>
+                            </li>
+                            `;
                         });
 
                         resultsHtml += `
                             </ul>
                         </details>
-                    `;
+                        `;
                     }
-                    document.getElementById("results-section").innerHTML =
-                        resultsHtml;
+                    document.getElementById("results-section").innerHTML = resultsHtml;
                     return;
                 }
                 if (data.status === "FAILED") {
