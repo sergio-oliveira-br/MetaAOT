@@ -17,7 +17,7 @@ def build_attention_points(aot_results: List[Dict]) -> List[Dict]:
                 justification = "Non-production dependency (either test scope or omitted from runtime build)."
             else:
                 is_mitigated = False
-                justification = "Active production dependency with no AOT metadata found."
+                justification = ""
 
             candidates.append({
                 "package_name": package_name,
