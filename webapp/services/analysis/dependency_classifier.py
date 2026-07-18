@@ -124,6 +124,7 @@ def classify_direct_vs_transitive(pom_deps: List[Dict[str, str]], sbom_graph: Di
                 "origin": origin,
                 "evidence": evidence,
                 "optional": optional,
+                "structural_context": _build_structural_context(purl,sbom_graph,pom_map)
             })
             classified_ga_coords.add(coord_norm)
 
@@ -132,13 +133,120 @@ def classify_direct_vs_transitive(pom_deps: List[Dict[str, str]], sbom_graph: Di
                 coord_original = f"{dep_info.get('groupId')}:{dep_info.get('artifactId')}"
                 results.append({
                     "name": coord_original,
-                    "declared_scope": dep_info.get("scope", "compile"),
+                    "declared_scope": dep_info.get("scope","compile"),
                     "origin": "unknown",
-                    "evidence": ["Declared in POM but omitted/filtered out from the generated active SBOM graph"],
-                    "optional": dep_info.get("optional", "false"),
+                    "evidence": [ "Declared in POM but omitted/filtered out from the generated active SBOM graph"],
+                    "optional": dep_info.get("optional","false"),
+                    "structural_context": {
+                        "declared_in_pom": True,
+                        "origin": "unknown",
+                        "resolved_scope": dep_info.get("scope","compile"),
+                        "parent_count": 0,
+                        "child_count": 0,
+                        "nearest_declared_dependencies": [],
+                        "dependency_paths": []
+                    }
                 })
-
         return results
+
     except Exception:
         logger.exception("Error when classifying dependencies")
         raise ClassificationError("Error when classifying dependencies")
+
+
+
+def _find_dependency_paths(target_purl: str,sbom_graph: Dict[str, Set[str]],pom_map: Dict[str, Dict],max_paths: int = 10) -> List[List[str]]:
+    parent_map = {}
+    for parent, children in sbom_graph.items():
+        for child in children:
+            parent_map.setdefault(child, set()).add(parent)
+
+    paths = []
+    def walk(current, path, visited):
+        if len(paths) >= max_paths:
+            return
+        if current in visited:
+            return
+
+        visited = visited | {current}
+        group_id, artifact_id, _ = _parse_purl_details(current)
+        coord = _normalize_node(f"{group_id}:{artifact_id}")
+
+        # Stop when reaching a declared dependency
+        if coord in pom_map:
+            paths.append(list(reversed(path + [current])))
+            return
+
+        parents = parent_map.get(current, set())
+        if not parents:
+            paths.append(list(reversed(path + [current])))
+            return
+
+        for parent in parents:
+            walk(parent, path + [current],visited)
+
+    walk(target_purl,[],set())
+    return paths
+
+
+def _build_structural_context(target_purl: str,sbom_graph: Dict[str, Set[str]],pom_map: Dict[str, Dict]) -> Dict:
+    parent_map = {}
+
+    for parent, children in sbom_graph.items():
+        for child in children:
+            parent_map.setdefault(child, set()).add(parent)
+    group_id, artifact_id, version = _parse_purl_details(target_purl)
+    coord = _normalize_node(f"{group_id}:{artifact_id}")
+    declared_in_pom = coord in pom_map
+    parents = parent_map.get(target_purl, set())
+    children = sbom_graph.get(target_purl, set())
+
+    # Find nearest declared Maven dependencies
+    nearest_declared_dependencies = set()
+
+    visited = set()
+    queue = list(parents)
+
+    while queue:
+        current = queue.pop(0)
+        if current in visited:
+            continue
+
+        visited.add(current)
+        p_group, p_art, _ = _parse_purl_details(current)
+        p_coord = _normalize_node(f"{p_group}:{p_art}")
+
+        if p_coord in pom_map:
+            nearest_declared_dependencies.add(f"{p_group}:{p_art}")
+
+        else:
+            queue.extend(parent_map.get(current, []))
+
+    scope = "compile"
+
+    if declared_in_pom:
+        scope = pom_map[coord].get("scope","compile")
+
+    else:
+        scope = _find_resolved_scope(target_purl,sbom_graph,pom_map)
+
+    logger.info(
+        "STRUCTURAL CONTEXT | package=%s | declared=%s | parents=%d | children=%d | ancestors=%s | paths=%s",
+        coord,
+        declared_in_pom,
+        len(parents),
+        len(children),
+        list(nearest_declared_dependencies),_find_dependency_paths(target_purl,sbom_graph,pom_map)
+    )
+    dependency_paths = _find_dependency_paths(target_purl,sbom_graph,pom_map)
+
+    return {
+        "declared_in_pom": declared_in_pom,
+        "origin": ("direct" if declared_in_pom else "transitive"),
+        "resolved_scope": scope,
+        "parent_count": len(parents),
+        "child_count": len(children),
+        "nearest_declared_dependencies": sorted(list(nearest_declared_dependencies)),
+        "dependency_paths": dependency_paths,
+        "path_count": len(dependency_paths)
+    }
