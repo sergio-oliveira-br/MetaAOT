@@ -195,7 +195,8 @@ def lambda_handler(event, context):
         append_log(job_id, "12) Classifying Dependencies...")
         try:
             classified = classify_direct_vs_transitive(pom_deps, graph)
-            origin_map = {item["name"]: item["origin"] for item in classified}
+            # origin_map = {item["name"]: item["origin"] for item in classified}
+            classified_map = {item["name"]: item for item in classified}
             dependency_summary = summarize_dependencies(classified)
             aot_results = review_missing_evidence(aot_results, graph)
             aot_summary = summarize_aot_results(aot_results)
@@ -218,13 +219,16 @@ def lambda_handler(event, context):
                     "confidence": getattr(comp, "confidence", ""),
                     "reason": getattr(comp, "reason", ""),
                     "layer": getattr(comp, "layer", ""),
-                    "elapsed_ms": getattr(comp, "elapsed_ms", 0)
+                    "elapsed_ms": getattr(comp, "elapsed_ms", 0),
                 }
             else:
                 comp_dict = dict(comp)
 
             pkg_name = comp_dict.get("package_name", "")
-            comp_dict["origin"] = origin_map.get(pkg_name, "transitive")
+            class_info = classified_map.get(pkg_name, {})
+            comp_dict["origin"] = class_info.get("origin", "transitive")
+            comp_dict["declared_scope"] = class_info.get("declared_scope", "compile")
+            comp_dict["optional"] = class_info.get("optional", "false")
             aot_results_classified.append(comp_dict)
 
         result = {
