@@ -23,8 +23,18 @@ def build_graph_from_sbom(sbom_text):
         graph[parent] = set(
             dep.get("dependsOn", [])
         )
-    logger.info(
-        "SBOM graph built with %d nodes",
-        len(graph)
-    )
+
+    logger.info("SBOM graph built with %d nodes",len(graph))
+    edge_count = sum(len(children) for children in graph.values())
+    logger.info("SBOM graph contains %d dependency edges",edge_count )
+
+    sample_nodes = list(graph.items())[:5]
+
+    for parent, children in sample_nodes:
+        logger.info(
+            "GRAPH SAMPLE | %s -> %s",
+            parent,
+            list(children)[:5]
+        )
+
     return graph
