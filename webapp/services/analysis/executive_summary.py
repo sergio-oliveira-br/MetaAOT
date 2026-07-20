@@ -18,13 +18,6 @@ def build_executive_summary(dependency_summary, aot_summary):
             "the migration to a native binary should proceed smoothly without any compatibility issues."
         )
 
-    elif no_ev / effective_components >= 0.6:
-        readiness = "Required Attention"
-        message = (
-            "Most components lack compatibility evidence. "
-            "Migration will likely require significant effort and validation."
-        )
-
     elif coverage == 100:
         readiness = "No Migration Effort Expected"
         message = (
