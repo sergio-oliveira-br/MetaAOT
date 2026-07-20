@@ -1,0 +1,95 @@
+<div class="form-card" style="
+  background: #fcfcfc;
+  border: 1px solid #f0f0f0;
+  border-radius: 6px;
+  padding: 16px;
+  margin-bottom: 20px;
+  font-family: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
+">
+  <!-- Badge -->
+  <div style="
+    display: inline-block;
+    background: #eef2f5;
+    color: #555;
+    font-weight: 700;
+    font-size: 11px;
+    padding: 2px 6px;
+    border-radius: 4px;
+    text-transform: uppercase;
+    margin-bottom: 12px;
+  ">
+    Analysis Pipeline Input
+  </div>
+
+  <style>
+    .form-card form {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      flex-wrap: wrap;
+    }
+
+    .form-card form p {
+      margin: 0;
+      padding: 0;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .form-card form label {
+      font-size: 13px;
+      color: #333;
+      font-weight: 600;
+    }
+
+    .form-card form input {
+      padding: 6px 10px;
+      border: 1px solid #ddd;
+      border-radius: 4px;
+      font-size: 13px;
+      min-width: 320px;
+      font-family: inherit;
+      outline: none;
+      transition: border-color 0.15s ease-in-out;
+    }
+
+    .form-card form input:focus {
+      border-color: #0066cc;
+    }
+
+    .form-card .submit-btn {
+      background-color: #222;
+      color: #fff;
+      padding: 7px 14px;
+      border: none;
+      border-radius: 4px;
+      font-size: 13px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: background-color 0.15s ease-in-out;
+    }
+
+    .form-card .submit-btn:hover {
+      background-color: #444;
+    }
+  </style>
+
+  <form method="post">
+    {% csrf_token %}
+    {{ form.as_p }}
+    <button class="submit-btn" type="submit">Analyse</button>
+  </form>
+
+  <div style="
+    margin-top: 10px;
+    font-size: 11px;
+    color: #666;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+  ">
+    <span style="color: #0066cc; font-weight: bold;">ℹ</span>
+    Expected format: Public GitHub repository URL containing a valid Apache Maven project descriptor (pom.xml).
+  </div>
+</div>
