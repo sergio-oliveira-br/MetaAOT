@@ -169,25 +169,7 @@ def lambda_handler(event, context):
                     "version": component["version"],
                     "bom_ref": component["bom_ref"],
                 })
-
             append_log(job_id, f"    [OK] Analysis completed")
-
-            embedded = sum(1 for x in aot_results if x["status"] == "EMBEDDED_METADATA")
-            official = sum(1 for x in aot_results if x["status"] == "OFFICIAL_METADATA")
-            not_tested = sum(1 for x in aot_results if x["status"] == "VERSION_NOT_TESTED")
-            not_applicable = sum(1 for x in aot_results if x["status"] == "NOT_APPLICABLE")
-            evidence_not_found = sum(1 for x in aot_results if x["status"] == "EVIDENCE_NOT_FOUND")
-            supported_transitively = sum(1 for x in aot_results if x["status"] == "SUPPORTED_TRANSITIVELY")
-
-        #     append_log(
-        #         job_id,
-        #         f"Embedded={embedded} "
-        #         f"Official={official} "
-        #         f"VersionNotTested={not_tested} "
-        #         f"NotApplicable={not_applicable} "
-        #         f"EvidenceNotFound={evidence_not_found}"
-        #         f"SupportedTransitively={supported_transitively}"
-        # )
         except Exception as exc:
             handle_failure(job_id, exc, "    [X] AOT Analysis Failed.")
             return {"statusCode": 500}
@@ -236,6 +218,16 @@ def lambda_handler(event, context):
             "aot_summary": aot_summary,
             "executive_summary": executive_summary,
             "attention_points": attention_points,
+            "analysis_information": [
+                {
+                    "type": "SBOM_SCOPE_INFORMATION",
+                    "message":
+                        "The SBOM was generated using CycloneDX makeAggregateBom "
+                        "with compile, provided, runtime and system scopes. "
+                        "Dependencies exclusively declared with test scope "
+                        "may not appear in this SBOM."
+                }
+            ],
             "aot_results": aot_results_classified
         }
         append_log(job_id, f"    [FINISHED] Job {job_id}.")
