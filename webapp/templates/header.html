@@ -1,0 +1,92 @@
+<header style="
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  padding: 20px 1px;
+  border-bottom: 1px solid #eee;
+  background: transparent;
+  font-family: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+">
+    <!-- Top Bar: Logo, Title and NCI Context -->
+    <div style="
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+  ">
+        <div style="display: flex; align-items: center; gap: 12px;">
+            <div>
+                <h1 style="
+          margin: 0;
+          font-size: 20px;
+          color: #111;
+          font-weight: 700;
+          letter-spacing: 0.2px;
+        ">MetaAOT</h1>
+
+                <div style="
+          margin-top: 2px;
+          font-size: 12px;
+          color: #0066cc;
+          font-weight: 600;
+          text-transform: uppercase;
+          letter-spacing: 0.5px;
+        ">
+                    MSc in Cloud Computing Research Project — National College of Ireland
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Context -->
+    <div style="
+    background: #fcfcfc;
+    border: 1px solid #f0f0f0;
+    border-radius: 6px;
+    padding: 16px;
+    font-size: 13px;
+    color: #444;
+    line-height: 1.5;
+  ">
+        <div style="margin-bottom: 12px;">
+      <span style="display: inline-block; background: #eef2f5; color: #333; font-weight: 700; font-size: 11px; padding: 2px 6px; border-radius: 4px; text-transform: uppercase; margin-bottom: 6px;">
+        Research Objective
+      </span>
+            <p style="margin: 0; color: #222;">
+                A static build-time analyzer that evaluates how well a Maven dependency tree is prepared for
+                Ahead-of-Time native compilation, intercepting potential architectural gaps before any code
+                execution or compilation begins.
+            </p>
+        </div>
+
+        {#        <div style="margin-bottom: 12px; border-top: 1px dashed #eee; padding-top: 10px;">#}
+        {#      <span style="display: inline-block; background: #eef2f5; color: #0066cc; font-weight: 700; font-size: 11px; padding: 2px 6px; border-radius: 4px; text-transform: uppercase; margin-bottom: 6px;">#}
+        {#        Main Contribution#}
+        {#      </span>#}
+        {#            <p style="margin: 0; color: #222;">#}
+        {#                Applies "Shift-Left" and Software Composition Analysis (SCA) principles to native migration. Instead of#}
+        {#                relying on slow trial-and-error compilation, it treats native readiness as a predictable, structural#}
+        {#                evidence assessment problem. </p>#}
+        {#        </div>#}
+
+        <div style="border-top: 1px dashed #eee; padding-top: 10px;">
+      <span style="display: inline-block; background: #eef2f5; color: #0066cc; font-weight: 700; font-size: 11px; padding: 2px 6px; border-radius: 4px; text-transform: uppercase; margin-bottom: 6px;">
+        Layered Evidence Model
+      </span>
+            <ul style="margin: 4px 0 0 0; padding-left: 18px; color: #555; display: flex; flex-direction: column; gap: 4px;">
+                <li><strong>(i) Embedded Metadata:</strong> Inspecting native-image configurations inside JAR manifests.
+                </li>
+                <li><strong>(ii) External Reachability:</strong> Validating artifacts against target open-source AOT
+                    community specifications.
+                </li>
+                <li><strong>(iii) Conservative Baseline:</strong> Applying risk-mitigated classification when explicit
+                    evidence is absent.
+                </li>
+            </ul>
+        </div>
+
+        <p style="margin: 12px 0 0 0; font-size: 11px; color: #888; border-top: 1px solid #f0f0f0; padding-top: 8px; font-style: italic;">
+            Disclaimer: This is an independent academic tool developed purely for validation of research objectives.
+        </p>
+    </div>
+</header>
