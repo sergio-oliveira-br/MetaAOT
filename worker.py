@@ -207,10 +207,23 @@ def lambda_handler(event, context):
                 comp_dict = dict(comp)
 
             pkg_name = comp_dict.get("package_name", "")
-            class_info = classified_map.get(pkg_name, {})
-            comp_dict["origin"] = class_info.get("origin", "transitive")
-            comp_dict["declared_scope"] = class_info.get("declared_scope", "compile")
-            comp_dict["optional"] = class_info.get("optional", "false")
+            class_info = classified_map.get(pkg_name)
+
+            if not class_info:
+                append_log(job_id,f"CONTEXT NOT FOUND | package={pkg_name}")
+                class_info = {}
+
+            # else:
+            #     append_log(job_id,f"CONTEXT {pkg_name}: {class_info.get('structural_context', {})}")
+
+            comp_dict["origin"] = class_info.get("origin","unknown")
+            comp_dict["declared_scope"] = class_info.get("declared_scope","unknown")
+            comp_dict["optional"] = class_info.get("optional","false")
+
+            structural_context = class_info.get("structural_context",{})
+            structural_context.pop("dependency_paths",None)
+            comp_dict["structural_context"] = structural_context
+
             aot_results_classified.append(comp_dict)
 
         result = {
