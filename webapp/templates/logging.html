@@ -1,0 +1,95 @@
+{#webapp/templates/logging.html#}
+
+<div style="
+  background: #fcfcfc;
+  border: 1px solid #f0f0f0;
+  border-radius: 6px;
+  padding: 16px;
+  margin-bottom: 20px;
+  font-family: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
+">
+    <!--Badge -->
+    <div style="
+    display: inline-block;
+    background: #eef2f5;
+    color: #555;
+    font-weight: 700;
+    font-size: 11px;
+    padding: 2px 6px;
+    border-radius: 4px;
+    text-transform: uppercase;
+    margin-bottom: 10px;
+  ">
+        Build-Time Execution Log
+    </div>
+
+    <style>
+        #log-list {
+            list-style: none;
+            margin: 0;
+            padding: 0;
+            font-family: ui-monospace, "Roboto Mono", Menlo, Monaco, monospace;
+            font-size: 11px; /* Reduced from 13px for subtle hierarchy */
+            color: #444;
+        }
+
+        #log-list li {
+            display: flex;
+            align-items: flex-start;
+            gap: 6px;
+            margin: 4px 0; /* Tighter vertical spacing */
+            padding: 4px 6px;
+            border-radius: 4px;
+            background: #ffffff;
+            border: 1px solid #f5f5f5;
+        }
+
+        #log-list li::before {
+            content: "›";
+            color: #b0b0b0;
+            width: 12px;
+            text-align: center;
+            font-weight: 700;
+        }
+
+        #log-list pre {
+            margin: 0;
+            padding: 0;
+            white-space: pre-wrap;
+            background: transparent;
+            color: inherit;
+            font-family: inherit;
+            line-height: 1.4;
+            overflow-wrap: anywhere;
+        }
+
+        .log-empty-state {
+            font-size: 12px;
+            color: #888;
+            margin: 0;
+            font-style: italic;
+        }
+    </style>
+
+    <div id="log-container" style="max-height: 160px; overflow-y: auto; padding-right: 4px;">
+        {% if steps_log %}
+            <ul id="log-list">
+                {% for step in steps_log %}
+                    <li>
+                        <pre>{{ step }}</pre>
+                    </li>
+                {% endfor %}
+            </ul>
+        {% else %}
+            <div style="margin: 0; padding: 4px 0;">
+                <p class="log-empty-state" style="margin: 0; font-weight: 600; color: #777;">
+                    Pipeline idle. Awaiting target repository URL...
+                </p>
+                <p style="margin: 4px 0 0 0; font-size: 11px; color: #999; line-height: 1.4;">
+                    Once submitted, this terminal will stream real-time Software Composition Analysis milestones,
+                    including automated SBOM synthesis and dependency graph tree extraction.
+                </p>
+            </div>
+        {% endif %}
+    </div>
+</div>
