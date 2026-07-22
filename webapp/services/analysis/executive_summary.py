@@ -26,10 +26,10 @@ def build_executive_summary(dependency_summary, aot_summary):
     )
 
     else:
-        readiness = "Required Attention"
+        readiness = "Partially Verified"
         message = (
-            "One or more dependency lacks evidence. "
-            "Migration may require substantial work."
+            "One or more dependencies lack verified native-image metadata evidence."
+            "Additional validation may be required before native deployment."
         )
 
     return {
