@@ -26,7 +26,7 @@ def summarize_aot_results(aot_results: List[Dict[str, Any]]) -> Dict[str, Any]:
         "version_not_tested": 0,
         "not_applicable": 0,
         "evidence_not_found": 0,
-        "supported_transitively": 0
+        "indirect_evidence_only": 0
     }
 
     for item in aot_results:
@@ -47,8 +47,8 @@ def summarize_aot_results(aot_results: List[Dict[str, Any]]) -> Dict[str, Any]:
         elif status == "EVIDENCE_NOT_FOUND":
             summary["evidence_not_found"] += 1
 
-        elif status == "SUPPORTED_TRANSITIVELY":
-            summary["supported_transitively"] += 1
+        elif status == "INDIRECT_EVIDENCE_ONLY":
+            summary["indirect_evidence_only"] += 1
 
         else:
             logger.warning(f"Unknown status: {status}")
@@ -60,7 +60,7 @@ def summarize_aot_results(aot_results: List[Dict[str, Any]]) -> Dict[str, Any]:
         + summary["version_not_tested"]
         + summary["not_applicable"]
         + summary["evidence_not_found"]
-        + summary["supported_transitively"]
+        + summary["indirect_evidence_only"]
     )
 
     if effective > 0:
