@@ -15,7 +15,7 @@ def review_missing_evidence(results, graph):
             result_map
         )
         if evidence:
-            component["effective_status"] = "SUPPORTED_TRANSITIVELY"
+            component["effective_status"] = "INDIRECT_EVIDENCE_ONLY"
             component["evidence_source"] = evidence
         else:
             component["effective_status"] = "EVIDENCE_NOT_FOUND"
@@ -57,7 +57,7 @@ def find_evidence(node, graph, result_map, visited=None):
                 "path": [node]
             }
 
-        if effective_status == "SUPPORTED_TRANSITIVELY":
+        if effective_status == "INDIRECT_EVIDENCE_ONLY":
             return {
                 "source": current.get("evidence_source"),
                 "status": effective_status,
