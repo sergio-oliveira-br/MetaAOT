@@ -301,7 +301,8 @@
                             } else {
                                 resultsHtml += `
                                 <li style="margin-bottom: 5px; font-family: ui-monospace, monospace; color: #222;">
-                                    <strong style="color: #dc3545;">[EVIDENCE GAP]</strong> <strong>${point.package_name}</strong>
+                                    <strong style="color: ${point.status === "INDIRECT_EVIDENCE_ONLY" ? "#d4a056" : point.status === "EVIDENCE_NOT_FOUND" ? "#dc3545" : "#777"}">[${point.status}]</strong>
+                                    <strong>${point.package_name}</strong>
                                     <button onclick='showDependencyContext(${stringifiedComp})' style="margin-left:4px; border:none; background:none; cursor:pointer; color:#0066cc; font-size:12px; padding:0 2px;" title="Inspect Dependency Context">ℹ</button>
                                     <span style="color: #555;">${point.justification}</span>
                                 </li>`;
