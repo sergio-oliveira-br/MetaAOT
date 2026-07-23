@@ -243,6 +243,8 @@
                     if (Object.keys(executiveSummary).length > 0) {
                         const totalComponents = aotResults.length;
                         const evidenceNotFound = aotResults.filter(comp => (comp.effective_status || comp.status) === "EVIDENCE_NOT_FOUND").length;
+                        const indirectEvidenceOnly = aotResults.filter(comp => (comp.effective_status || comp.status) === "INDIRECT_EVIDENCE_ONLY").length;
+
                         const supportedEvidence = totalComponents - evidenceNotFound;
 
                         resultsHtml += `
@@ -254,7 +256,8 @@
                             <div style="display: flex; flex-direction: row; align-items: center; gap: 45px; margin-bottom: 16px; border-bottom: 1px dashed #eee; padding-bottom: 16px;">
                                 <div style="font-family: ui-monospace, monospace; font-size: 12px; color: #555; line-height: 1.6; background: #ffffff; padding: 10px; border: 1px solid #f0f0f0; border-radius: 4px; width: fit-content; min-width: 280px; flex-shrink: 0;">
                                     <div>Declared Components${".".repeat(Math.max(2, 25 - String(totalComponents).length))}${totalComponents}</div>
-                                    <div>Supported Evidence${".".repeat(Math.max(2, 25 - String(supportedEvidence).length))}${supportedEvidence}</div>
+                                    <div>Supported Evidence${".".repeat(Math.max(2, 26 - String(supportedEvidence).length))}${supportedEvidence}</div>
+                                    <div style="${indirectEvidenceOnly > 0 ? 'color: #d4a056; font-weight: bold;' : ''}">Indirect Evidence Only${".".repeat(Math.max(2, 21 - String(indirectEvidenceOnly).length))}${indirectEvidenceOnly}</div>
                                     <div style="${evidenceNotFound > 0 ? 'color: #dc3545; font-weight: bold;' : ''}">Evidence Not Found${".".repeat(Math.max(2, 25 - String(evidenceNotFound).length))}${evidenceNotFound}</div>
                                 </div>
                                 <div style="display: flex; gap: 45px;">
