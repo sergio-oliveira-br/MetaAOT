@@ -22,7 +22,8 @@ def build_attention_points(aot_results: List[Dict]) -> List[Dict]:
             candidates.append({
                 "package_name": package_name,
                 "is_mitigated": is_mitigated,
-                "justification": justification
+                "justification": justification,
+                "status": item.get("status", "")
             })
 
     return sorted(candidates, key=lambda x: (x["is_mitigated"], x["package_name"]))[:MAX_POINTS]
