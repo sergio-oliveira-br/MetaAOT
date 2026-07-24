@@ -1,0 +1,91 @@
+{#webapp/templates/_scope_modal.html#}
+
+<div id="metaaot-scope-modal" style="
+  display: none;
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  background: rgba(0, 0, 0, 0.4);
+  backdrop-filter: blur(2px);
+  z-index: 9999;
+  align-items: center;
+  justify-content: center;
+  font-family: ui-sans-serif, system-ui, -apple-system, sans-serif;
+">
+    <div style="
+      background: #ffffff;
+      border: 1px solid #e5e5e5;
+      border-radius: 8px;
+      max-width: 580px;
+      width: 90%;
+      padding: 24px;
+      box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1);
+      position: relative;
+    ">
+        <!-- Badge & Header -->
+        <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 12px;">
+            <span style="background: #eef2f5; color: #0066cc; font-weight: 700; font-size: 11px; padding: 3px 8px; border-radius: 4px; text-transform: uppercase;">
+                Academic Assessment Framework Scope
+            </span>
+            <button onclick="closeScopeModal()" style="border: none; background: transparent; font-size: 18px; color: #999; cursor: pointer; padding: 0; line-height: 1;">&times;</button>
+        </div>
+
+        <h3 style="margin: 0 0 10px 0; font-size: 16px; color: #111; font-weight: 700;">
+            Understanding MetaAOT Findings & Boundaries
+        </h3>
+
+        <p style="font-size: 13px; color: #555; line-height: 1.5; margin: 0 0 14px 0;">
+            This tool implements a <strong>Shift-Left static analysis framework</strong> to assess Maven dependency readiness for GraalVM Native Image prior to compilation.
+        </p>
+
+        <!-- Explanatory -->
+        <div style="background: #fafafa; border: 1px solid #f0f0f0; border-radius: 6px; padding: 12px; margin-bottom: 14px; font-size: 12px; line-height: 1.5; color: #333;">
+            <div style="font-weight: 700; color: #222; margin-bottom: 4px;">✓ What MetaAOT Provides:</div>
+            <ul style="margin: 0; padding-left: 18px; color: #555;">
+                <li>Early, lightweight detection of structural metadata evidence in seconds.</li>
+                <li>Identification of embedded native configurations, reachability specs, and missing gaps.</li>
+                <li>Prevention of costly trial-and-error compilation cycles.</li>
+            </ul>
+        </div>
+
+        <div style="background: #fff8f8; border: 1px solid #ffe8e8; border-radius: 6px; padding: 12px; margin-bottom: 16px; font-size: 12px; line-height: 1.5; color: #333;">
+            <div style="font-weight: 700; color: #c93b3b; margin-bottom: 4px;">⚠ Research Limitation & Boundary:</div>
+            <p style="margin: 0; color: #555;">
+                Structural evidence alone <strong>does not guarantee native compilation success</strong>. Dynamic runtime behaviors, reflection, and internal GraalVM reachability analysis remain outside the scope of static structural inspection.
+            </p>
+        </div>
+
+        <div style="display: flex; justify-content: flex-end; align-items: center; border-top: 1px solid #eee; padding-top: 14px; margin-top: 8px;">
+            <button onclick="closeScopeModal()" style="
+              background: #0066cc;
+              color: #ffffff;
+              border: none;
+              padding: 8px 16px;
+              border-radius: 4px;
+              font-size: 12px;
+              font-weight: 600;
+              cursor: pointer;
+            ">
+                I Understand
+            </button>
+        </div>
+    </div>
+</div>
+
+<script>
+    function openScopeModal() {
+        const modal = document.getElementById("metaaot-scope-modal");
+        if (modal) modal.style.display = "flex";
+    }
+
+    function closeScopeModal() {
+        const modal = document.getElementById("metaaot-scope-modal");
+        if (modal) modal.style.display = "none";
+    }
+
+    document.addEventListener("DOMContentLoaded", function() {
+        setTimeout(openScopeModal, 3000);
+    });
+</script>
