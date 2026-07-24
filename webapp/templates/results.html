@@ -239,13 +239,24 @@
                         <p style="margin: 6px 0 0 0; font-size: 11px; color: #999; font-family: ui-monospace, monospace;">Job ID: ${jobId}</p>
                     </div>`;
 
+                    const analysisInfo = result.analysis_information || [];
+
                     // Executive Summary Subsection Card
                     if (Object.keys(executiveSummary).length > 0) {
                         const totalComponents = aotResults.length;
                         const evidenceNotFound = aotResults.filter(comp => (comp.effective_status || comp.status) === "EVIDENCE_NOT_FOUND").length;
                         const indirectEvidenceOnly = aotResults.filter(comp => (comp.effective_status || comp.status) === "INDIRECT_EVIDENCE_ONLY").length;
-
                         const supportedEvidence = totalComponents - evidenceNotFound - indirectEvidenceOnly;
+
+                        let scopeNotesHtml = "";
+                        if (analysisInfo.length > 0) {
+                            const messages = analysisInfo.map(i => i.message).join(" ");
+                            scopeNotesHtml = `
+                            <div style="margin-top: 14px; padding-top: 10px; border-top: 1px dashed #eee; font-size: 11px; color: #777; display: flex; align-items: flex-start; gap: 6px;">
+                                <span style="color: #0066cc; font-weight: bold; flex-shrink: 0;">ℹ Scope Note:</span>
+                                <span style="line-height: 1.4;">${messages}</span>
+                            </div>`;
+                        }
 
                         resultsHtml += `
                         <div style="border: 1px solid #f0f0f0; padding: 16px; border-radius: 6px; margin-bottom: 20px; background: #fcfcfc;">
@@ -274,6 +285,7 @@
                             </div>
 
                             <p style="margin: 0; font-size: 13px; line-height: 1.5; color:#333;"><strong>Assessment Finding:</strong><br><span style="color: #555;">${executiveSummary.message || ""}</span></p>
+                            ${scopeNotesHtml}
                         </div>`;
                     }
 
