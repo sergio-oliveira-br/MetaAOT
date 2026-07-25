@@ -1,3 +1,5 @@
+{# webapp/templates/header.html #}
+
 <header style="
   display: flex;
   flex-direction: column;
@@ -7,37 +9,35 @@
   background: transparent;
   font-family: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
 ">
-    <!-- Top Bar: Logo, Title and NCI Context -->
     <div style="
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: 16px;
-  ">
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+    ">
         <div style="display: flex; align-items: center; gap: 12px;">
             <div>
                 <h1 style="
-          margin: 0;
-          font-size: 20px;
-          color: #111;
-          font-weight: 700;
-          letter-spacing: 0.2px;
-        ">MetaAOT</h1>
+                  margin: 0;
+                  font-size: 20px;
+                  color: #111;
+                  font-weight: 700;
+                  letter-spacing: 0.2px;
+                ">MetaAOT</h1>
 
                 <div style="
-          margin-top: 2px;
-          font-size: 12px;
-          color: #0066cc;
-          font-weight: 600;
-          text-transform: uppercase;
-          letter-spacing: 0.5px;
-        ">
+                  margin-top: 2px;
+                  font-size: 12px;
+                  color: #0066cc;
+                  font-weight: 600;
+                  text-transform: uppercase;
+                  letter-spacing: 0.5px;
+                ">
                     MSc in Cloud Computing Research Project — National College of Ireland
                 </div>
             </div>
         </div>
 
-        <!-- Modal -->
         <button onclick="openScopeModal()" style="
           background: #ffffff;
           border: 1px solid #e0e0e0;
@@ -52,25 +52,24 @@
           gap: 5px;
           transition: all 0.2s ease;
         " onmouseover="this.style.borderColor='#0066cc'; this.style.background='#f4f8fc';"
-                onmouseout="this.style.borderColor='#e0e0e0'; this.style.background='#ffffff';">
+          onmouseout="this.style.borderColor='#e0e0e0'; this.style.background='#ffffff';">
             <span>ℹ</span> Methodology & Scope
         </button>
     </div>
 
-    <!-- Context -->
     <div style="
-    background: #fcfcfc;
-    border: 1px solid #f0f0f0;
-    border-radius: 6px;
-    padding: 16px;
-    font-size: 13px;
-    color: #444;
-    line-height: 1.5;
-  ">
+      background: #fcfcfc;
+      border: 1px solid #f0f0f0;
+      border-radius: 6px;
+      padding: 16px;
+      font-size: 13px;
+      color: #444;
+      line-height: 1.5;
+    ">
         <div style="margin-bottom: 12px;">
-      <span style="display: inline-block; background: #eef2f5; color: #333; font-weight: 700; font-size: 11px; padding: 2px 6px; border-radius: 4px; text-transform: uppercase; margin-bottom: 6px;">
-        Research Objective
-      </span>
+            <span style="display: inline-block; background: #eef2f5; color: #333; font-weight: 700; font-size: 11px; padding: 2px 6px; border-radius: 4px; text-transform: uppercase; margin-bottom: 6px;">
+                Research Objective
+            </span>
             <p style="margin: 0; color: #222;">
                 A static build-time analyzer that evaluates how well a Maven dependency tree is prepared for
                 Ahead-of-Time native compilation, intercepting potential architectural gaps before any code
@@ -78,30 +77,53 @@
             </p>
         </div>
 
-        {#        <div style="margin-bottom: 12px; border-top: 1px dashed #eee; padding-top: 10px;">#}
-        {#      <span style="display: inline-block; background: #eef2f5; color: #0066cc; font-weight: 700; font-size: 11px; padding: 2px 6px; border-radius: 4px; text-transform: uppercase; margin-bottom: 6px;">#}
-        {#        Main Contribution#}
-        {#      </span>#}
-        {#            <p style="margin: 0; color: #222;">#}
-        {#                Applies "Shift-Left" and Software Composition Analysis (SCA) principles to native migration. Instead of#}
-        {#                relying on slow trial-and-error compilation, it treats native readiness as a predictable, structural#}
-        {#                evidence assessment problem. </p>#}
-        {#        </div>#}
-
         <div style="border-top: 1px dashed #eee; padding-top: 10px;">
-      <span style="display: inline-block; background: #eef2f5; color: #0066cc; font-weight: 700; font-size: 11px; padding: 2px 6px; border-radius: 4px; text-transform: uppercase; margin-bottom: 6px;">
-        Layered Evidence Model
-      </span>
-            <ul style="margin: 4px 0 0 0; padding-left: 18px; color: #555; display: flex; flex-direction: column; gap: 4px;">
-                <li><strong>(i) Embedded Metadata:</strong> Inspecting native-image configurations inside JAR manifests.
-                </li>
-                <li><strong>(ii) External Reachability:</strong> Validating artifacts against target open-source AOT
-                    community specifications.
-                </li>
-                <li><strong>(iii) Conservative Baseline:</strong> Applying risk-mitigated classification when explicit
-                    evidence is absent.
-                </li>
-            </ul>
+            <span style="display: inline-block; background: #eef2f5; color: #0066cc; font-weight: 700; font-size: 11px; padding: 2px 6px; border-radius: 4px; text-transform: uppercase; margin-bottom: 8px;">
+                Multi-Layer AOT Evidence Model
+            </span>
+
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 10px; margin-top: 4px;">
+                <div style="background: #ffffff; border: 1px solid #f0f0f0; padding: 8px 10px; border-radius: 4px; font-size: 12px;">
+                    <strong style="color: #222;">Layer 1: Local Manifest Inspection</strong>
+                    <div style="color: #666; font-size: 11px; margin-top: 2px;">Scans in-memory JAR bytecode and <code>META-INF/native-image/</code> configurations.</div>
+                </div>
+
+                <div style="background: #ffffff; border: 1px solid #f0f0f0; padding: 8px 10px; border-radius: 4px; font-size: 12px;">
+                    <strong style="color: #222;">Layer 2: External Reachability Index</strong>
+                    <div style="color: #666; font-size: 11px; margin-top: 2px;">Evaluates exact versions and semantic proximity against AOT community specifications.</div>
+                </div>
+
+                <div style="background: #ffffff; border: 1px solid #f0f0f0; padding: 8px 10px; border-radius: 4px; font-size: 12px;">
+                    <strong style="color: #222;">Layer 3: Transitive Graph Fallback</strong>
+                    <div style="color: #666; font-size: 11px; margin-top: 2px;">Traverses dependency subgraphs to resolve implicit support before marking missing evidence.</div>
+                </div>
+            </div>
+
+            <details style="margin-top: 10px; font-size: 11px; color: #555;">
+                <summary style="cursor: pointer; color: #0066cc; font-weight: 600; outline: none; user-select: none;">
+                    View Detailed Status Classification Mapping
+                </summary>
+
+                <div style="margin-top: 8px; padding: 10px; background: #ffffff; border: 1px solid #e9e9e9; border-radius: 4px; display: grid; grid-template-columns: 1fr 1fr; gap: 8px;">
+                    <div>
+                        <strong style="color: #333;">Direct Verification Statuses:</strong>
+                        <ul style="margin: 4px 0 0 0; padding-left: 14px; line-height: 1.4;">
+                            <li><code style="color: #137333; font-weight: bold;">EMBEDDED_METADATA</code>: Native spec embedded inside JAR.</li>
+                            <li><code style="color: #0f5132; font-weight: bold;">OFFICIAL_METADATA</code>: Perfect coordinate/version match in registry.</li>
+                            <li><code style="color: #495057;font-weight: bold;">NOT_APPLICABLE</code>: No bytecode or explicitly flagged as non-native.</li>
+                        </ul>
+                    </div>
+
+                    <div>
+                        <strong style="color: #333;">Approximated & Fallback Statuses:</strong>
+                        <ul style="margin: 4px 0 0 0; padding-left: 14px; line-height: 1.4;">
+                            <li><code style="color: #b06000; font-weight: bold;">VERSION_NOT_TESTED</code>: Recognized family, semantic version proximity fallback.</li>
+                            <li><code style="color: #c7511f; font-weight: bold;">INDIRECT_EVIDENCE_ONLY</code>: Implicit support found via subgraph traversal.</li>
+                            <li><code style="color: #c5221f; font-weight: bold;">EVIDENCE_NOT_FOUND</code>: Residual fallback (no footprint across all layers).</li>
+                        </ul>
+                    </div>
+                </div>
+            </details>
         </div>
 
         <p style="margin: 12px 0 0 0; font-size: 11px; color: #888; border-top: 1px solid #f0f0f0; padding-top: 8px; font-style: italic;">
