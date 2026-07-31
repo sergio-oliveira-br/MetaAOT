@@ -6,7 +6,7 @@ MetaAOT investigates whether structural metadata contained in Maven dependency e
 
 ---
 
-## 📌 Project Overview
+## Project Overview
 
 Native compilation introduces stricter constraints than traditional JVM execution. Dependencies relying on mechanisms such as reflection, dynamic proxies, or JNI may require additional configuration before they can be successfully compiled as native executables.
 
@@ -16,7 +16,7 @@ The framework analyses Maven dependency graphs and classifies each dependency ac
 
 ---
 
-## 🧭 Scope and Project Status
+## Scope and Project Status
 
 This repository houses the structural tokenizers, routing logic, and verification services built to test the research hypothesis.
 
@@ -25,6 +25,6 @@ This repository houses the structural tokenizers, routing logic, and verificatio
 
 ---
 
-## 🎓 Academic Affiliation
+## Academic Affiliation
 
 This framework was developed purely for educational and academic research purposes at the NCI to analyze modern cloud-native software supply chain architectures.
