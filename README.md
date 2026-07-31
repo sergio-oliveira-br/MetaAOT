@@ -1,18 +1,18 @@
-# MetaAOT: From POM to Binary: Correlating Dependency Graph Properties with GraalVM Native Image Migration Effort
+# MetaAOT: From POM to Binary: An Evidence-Based Assessment of GraalVM Native Image Readiness Using Maven Dependency Metadata
 
-This repository contains the prototype codebase for an academic research project developed as part of the Master of Science in Cloud Computing curriculum at the **National College of Ireland (NCI)**. 
+This repository contains the proof-of-concept developed as part of the **Master of Science in Cloud Computing** at the **National College of Ireland (NCI)**.
 
-The objective of this project is to explore how Software Bill of Materials metadata can be used to analyze software dependency compatibility before initiating build lifecycles.
+MetaAOT investigates whether structural metadata contained in Maven dependency ecosystems can provide early evidence of GraalVM Native Image readiness before native compilation takes place. The proposed approach performs a lightweight static inspection of dependency metadata to identify available evidence and potential evidence gaps.
 
 ---
 
 ## 📌 Project Overview
 
-Migrating traditional Java applications to Ahead-of-Time environments introduces the strict **Closed-World Assumption**. In these runtime scenarios, dynamic features like reflection or dynamic proxies can cause system failures if they are not explicitly configured. 
+Native compilation introduces stricter constraints than traditional JVM execution. Dependencies relying on mechanisms such as reflection, dynamic proxies, or JNI may require additional configuration before they can be successfully compiled as native executables.
 
-To explore how developers can gain visibility into these ecosystem constraints early, this academic prototype implements a binary triage framework:
-* **Complete Map (100%):** Every analyzed dependency node contains a verified path or non-applicability flag within the research registers, indicating a stable configuration path.
-* **Action Required (< 100%):** Any unmapped metadata triggers a unified warning signal, indicating that human intervention would be required to manually inject configuration files before attempting compilation.
+Current workflows typically discover these compatibility issues during native compilation or through runtime tracing. MetaAOT explores a complementary **Shift-Left** approach by applying **Software Composition Analysis** principles to inspect dependency metadata before execution or compilation.
+
+The framework analyses Maven dependency graphs and classifies each dependency according to the structural evidence available within the Native Image ecosystem.
 
 ---
 
