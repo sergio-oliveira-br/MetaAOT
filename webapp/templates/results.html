@@ -291,36 +291,137 @@
 
                     // Evidence Gap Analysis Card
                     if (attentionPoints.length > 0) {
+                        const evidenceNotFound = attentionPoints.filter(
+                            point => point.status === "EVIDENCE_NOT_FOUND"
+                        );
+                        const indirectEvidenceOnly = attentionPoints.filter(
+                            point => point.status === "INDIRECT_EVIDENCE_ONLY"
+                        );
                         resultsHtml += `
                         <div style="border: 1px solid #f0f0f0; padding: 16px; border-radius: 6px; margin-bottom: 20px; background: #fcfcfc;">
                             <div style="display: inline-block; background: #fff0f0; color: #c93b3b; font-weight: 700; font-size: 11px; padding: 2px 6px; border-radius: 4px; text-transform: uppercase; margin-bottom: 10px;">
                                 Evidence Gap Analysis
                             </div>
-                            <p style="font-size: 12px; color: #666; margin: 0 0 12px 0;">Dependencies where no active native Ahead-of-Time configurations were metadata-verified during pipeline compilation.</p>
-                            <ul style="padding-left: 16px; margin: 0; line-height: 1.5; font-size:12px;">`;
 
-                        attentionPoints.forEach(point => {
-                            const fullComponentData = aotResults.find(c => c.package_name === point.package_name) || point;
-                            const stringifiedComp = JSON.stringify(fullComponentData);
+                            <p style="font-size: 12px; color: #666; margin: 0 0 16px 0;">
+                                Dependencies requiring further inspection due to missing or indirect Native Image metadata evidence.
+                            </p>
+                        `;
 
-                            if (point.is_mitigated) {
+                        if (evidenceNotFound.length > 0) {
+                            resultsHtml += `
+                            <div style="margin-bottom: 18px;">
+                                <div style="
+                                    font-size: 12px;
+                                    font-weight: 700;
+                                    color: #c5221f;
+                                    margin-bottom: 8px;
+                                ">
+                                    Evidence Not Found
+                                </div>
+
+                                <ul style="padding-left: 16px; margin: 0; line-height: 1.5; font-size:12px;">
+                            `;
+
+                            evidenceNotFound.forEach(point => {
+                                const fullComponentData = aotResults.find(
+                                    c => c.package_name === point.package_name
+                                ) || point;
+
+                                const stringifiedComp = JSON.stringify(fullComponentData);
+
                                 resultsHtml += `
-                                <li style="margin-bottom: 5px; font-family: ui-monospace, monospace; color: #777;">
-                                    <span>${point.package_name}</span>
-                                    <button onclick='showDependencyContext(${stringifiedComp})' style="margin-left:4px; border:none; background:none; cursor:pointer; color:#0066cc; font-size:12px; padding:0 2px;" title="Inspect Dependency Context">ℹ</button>
-                                    <span style="color: #999; font-style: italic;">— ${point.justification}</span>
-                                </li>`;
-                            } else {
-                                resultsHtml += `
-                                <li style="margin-bottom: 5px; font-family: ui-monospace, monospace; color: #222;">
-                                    <strong style="color: ${point.status === "INDIRECT_EVIDENCE_ONLY" ? "#c7511f" : point.status === "EVIDENCE_NOT_FOUND" ? "#c5221f" : "#777"}">[${point.status}]</strong>
+                                <li style="margin-bottom: 5px; font-family: ui-monospace, monospace; color:#222;">
+                    {#                <strong style="color:#c5221f;">#}
+                    {#                    [EVIDENCE_NOT_FOUND]#}
+                    {#                </strong>#}
+
                                     <strong>${point.package_name}</strong>
-                                    <button onclick='showDependencyContext(${stringifiedComp})' style="margin-left:4px; border:none; background:none; cursor:pointer; color:#0066cc; font-size:12px; padding:0 2px;" title="Inspect Dependency Context">ℹ</button>
-                                    <span style="color: #555;">${point.justification}</span>
+
+                                    <button
+                                        onclick='showDependencyContext(${stringifiedComp})'
+                                        style="
+                                            margin-left:4px;
+                                            border:none;
+                                            background:none;
+                                            cursor:pointer;
+                                            color:#0066cc;
+                                            font-size:12px;
+                                            padding:0 2px;
+                                        "
+                                        title="Inspect Dependency Context">
+                                        ℹ
+                                    </button>
+
+                                    <span style="color:#555;">
+                                        ${point.justification || ""}
+                                    </span>
                                 </li>`;
-                            }
-                        });
-                        resultsHtml += `</ul></div>`;
+                            });
+                            resultsHtml += `
+                                </ul>
+                            </div>
+                            `;
+                        }
+                        if (indirectEvidenceOnly.length > 0) {
+
+                            resultsHtml += `
+                            <div>
+                                <div style="
+                                    font-size: 12px;
+                                    font-weight: 700;
+                                    color: #c7511f;
+                                    margin-bottom: 8px;
+                                ">
+                                    Indirect Evidence Only
+                                </div>
+
+                                <ul style="padding-left: 16px; margin: 0; line-height: 1.5; font-size:12px;">
+                            `;
+
+                            indirectEvidenceOnly.forEach(point => {
+
+                                const fullComponentData = aotResults.find(
+                                    c => c.package_name === point.package_name
+                                ) || point;
+
+                                const stringifiedComp = JSON.stringify(fullComponentData);
+
+                                resultsHtml += `
+                                <li style="margin-bottom: 5px; font-family: ui-monospace, monospace; color:#222;">
+                    {#                <strong style="color:#c7511f;">#}
+                    {#                    [INDIRECT_EVIDENCE_ONLY]#}
+                    {#                </strong>#}
+
+                                    <strong>${point.package_name}</strong>
+
+                                    <button
+                                        onclick='showDependencyContext(${stringifiedComp})'
+                                        style="
+                                            margin-left:4px;
+                                            border:none;
+                                            background:none;
+                                            cursor:pointer;
+                                            color:#0066cc;
+                                            font-size:12px;
+                                            padding:0 2px;
+                                        "
+                                        title="Inspect Dependency Context">
+                                        ℹ
+                                    </button>
+
+                                    <span style="color:#555;">
+                                        ${point.justification || ""}
+                                    </span>
+                                </li>`;
+                            });
+
+                            resultsHtml += `
+                                </ul>
+                            </div>
+                            `;}
+                            resultsHtml += `
+                        </div>`;
                     }
 
                     // Component Breakdown Details
@@ -334,14 +435,14 @@
                             const displayStatus = comp.effective_status || comp.status;
                             let statusColor = "#777";
 
-                            if (displayStatus === "EMBEDDED_METADATA"){
-                                 statusColor = "#137333"
+                            if (displayStatus === "EMBEDDED_METADATA") {
+                                statusColor = "#137333"
                             } else if (displayStatus === "OFFICIAL_METADATA") {
                                 statusColor = "#0f5132";
                             } else if (displayStatus === "INDIRECT_EVIDENCE_ONLY") {
                                 statusColor = "#c7511f";
-                            } else if (displayStatus === "VERSION_NOT_TESTED"){
-                                 statusColor = "#b06000";
+                            } else if (displayStatus === "VERSION_NOT_TESTED") {
+                                statusColor = "#b06000";
                             } else if (displayStatus === "NOT_APPLICABLE") {
                                 statusColor = "#495057";
                             } else if (displayStatus === "EVIDENCE_NOT_FOUND") {
